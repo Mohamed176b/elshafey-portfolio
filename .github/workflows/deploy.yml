@@ -19,7 +19,7 @@ jobs:
         env:
           CI: false
           REACT_APP_USER_ID: '${{ secrets.REACT_APP_USER_ID }}'
-          REACT_APP_SUPABASE_KEY: '${{ secrets.REACT_APP_SUPABASE_KEY }}'
+          REACT_APP_SUPABASE_API_KEY: '${{ secrets.REACT_APP_SUPABASE_API_KEY }}'
       
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
