@@ -113,6 +113,17 @@ const Projects = () => {
       }
       console.log("Project deleted successfully from database");
 
+      const { error: deleteVisitError } = await supabase
+      .from("page_visits")
+      .delete()
+      .eq("project_id", projectId);
+
+      if (deleteVisitError) {
+        console.error("Error deleting project visits:", deleteVisitError);
+        return;
+      }
+      console.log("Project visites deleted successfully from database");
+
       if (projectData.thumbnailUrl) {
         const urlParts = projectData.thumbnailUrl.split("/");
         const bucketIndex = urlParts.indexOf("projects-thumbnails");
