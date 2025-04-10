@@ -10,11 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: npm ci
-      - run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      
+      - name: Install Dependencies
+        run: npm install
+      
+      - name: Build
+        run: npm run build
+        env:
+          CI: false
+      
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ELSHAKEY_PORTFOLIO }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ELSHAFEY_PORTFOLIO }}'
           channelId: live
           projectId: elshafey-portfolio
