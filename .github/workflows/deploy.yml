@@ -18,7 +18,7 @@ jobs:
         run: npm run build
         env:
           CI: false
-          REACT_APP_SUPABASE_URL: '${{ secrets.REACT_APP_USER_ID }}'
+          REACT_APP_USER_ID: '${{ secrets.REACT_APP_USER_ID }}'
           REACT_APP_SUPABASE_KEY: '${{ secrets.REACT_APP_SUPABASE_KEY }}'
       
       - name: Deploy to Firebase
