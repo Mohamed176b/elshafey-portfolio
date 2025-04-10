@@ -1,0 +1,380 @@
+/* تأثيرات حركية لبورتفوليو البشمهندس الشافعي */
+
+/* تأثيرات الظهور والدخول */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* تأثيرات التفاعل */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes spinGlow {
+  0% {
+    box-shadow: 0 0 10px 0 rgba(var(--caribbean-current-rgb), 0.2);
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px 0 rgba(var(--caribbean-current-rgb), 0.4);
+    transform: rotate(180deg) scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 10px 0 rgba(var(--caribbean-current-rgb), 0.2);
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes glassBlur {
+  0% { backdrop-filter: blur(5px); }
+  50% { backdrop-filter: blur(12px); }
+  100% { backdrop-filter: blur(5px); }
+}
+
+@keyframes borderGlow {
+  0% { border-color: rgba(255, 255, 255, 0.1); }
+  50% { border-color: rgba(255, 255, 255, 0.3); }
+  100% { border-color: rgba(255, 255, 255, 0.1); }
+}
+
+/* تأثيرات للصفحة الرئيسية */
+.portfolio-header {
+  animation: fadeIn 0.8s ease-out forwards, slideInUp 0.8s ease-out forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.portfolio-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(77, 25, 77, 0.1) 0deg,
+    rgba(0, 100, 102, 0.1) 90deg,
+    rgba(0, 0, 0, 0) 180deg,
+    rgba(0, 0, 0, 0) 360deg
+  );
+  opacity: 0.4;
+  animation: headerGradientRotate 15s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes headerGradientRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.portfolio-tabs {
+  animation: fadeIn 1s ease-out 0.3s forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.portfolio-tab {
+  transition: all 0.3s ease;
+}
+
+.portfolio-tab.active {
+  animation: pulse 1.5s infinite;
+}
+
+.portfolio-tab-content {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.project-card {
+  animation: fadeIn 0.5s ease-out, slideInUp 0.5s ease-out;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.project-card:hover {
+  animation: pulse 2s infinite;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+.tech-card {
+  animation: scaleIn 0.5s ease-out;
+  transition: all 0.3s ease;
+}
+
+.tech-card:hover {
+  animation: float 3s infinite ease-in-out;
+}
+
+.contact-card {
+  animation: fadeIn 0.8s ease-out, slideInUp 0.8s ease-out;
+  transition: transform 0.4s ease;
+}
+
+.contact-social a {
+  transition: all 0.3s ease;
+}
+
+.contact-social a:hover {
+  animation: pulse 1s infinite;
+}
+
+.contact-form {
+  animation: fadeIn 1s ease-out, slideInRight 1s ease-out;
+}
+
+.contact-form input,
+.contact-form textarea {
+  transition: all 0.3s ease;
+}
+
+/* تأثيرات للفوتر */
+.portfolio-footer {
+  animation: fadeIn 1s ease-out;
+  transition: backdrop-filter 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.portfolio-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(255, 255, 255, 0) 60%);
+  background-size: 200% 200%;
+  animation: footerGradientMove 8s ease infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes footerGradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.footer-content {
+  animation: fadeIn 1.2s ease-out, slideInUp 1.2s ease-out;
+}
+
+.footer-social a {
+  transition: all 0.3s ease;
+}
+
+.footer-social a:hover {
+  animation: pulse 1s infinite;
+}
+
+.footer-logo {
+  animation: fadeIn 1s ease-out, borderGlow 4s infinite;
+}
+
+/* تأثيرات لصفحة المشروع */
+.project-hero {
+  animation: fadeIn 1.2s ease-out;
+  transition: all 0.5s ease;
+}
+
+.project-hero-content h1 {
+  animation: fadeIn 2s ease-out, slideInUp 2s ease-out;
+}
+
+.project-back-btn {
+  animation: fadeIn 0.8s ease-out, slideInLeft 0.8s ease-out;
+  transition: all 0.3s ease;
+}
+
+.project-scroll-progress {
+  transition: width 0.2s ease;
+}
+
+.project-description-box {
+  animation: fadeIn 1.2s ease-out, slideInUp 1.2s ease-out;
+}
+
+.project-links a {
+  animation: fadeIn 1.4s ease-out, slideInUp 1.4s ease-out;
+  transition: all 0.3s ease;
+}
+
+.feature-card {
+  animation: fadeIn 0.5s ease-out, slideInRight 0.5s ease-out;
+  transition: all 0.4s ease;
+}
+
+.feature-card:hover {
+  animation: float 3s infinite ease-in-out;
+}
+
+.tech-card {
+  transition: all 0.3s ease;
+}
+
+.project-cta-section {
+  animation: fadeIn 1.5s ease-out, slideInUp 1.5s ease-out;
+}
+
+.cta-button {
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+  animation: pulse 1.5s infinite;
+}
+
+.scroll-top-btn {
+  animation: fadeIn 1s ease-out;
+  transition: all 0.3s ease;
+}
+
+.scroll-top-btn:hover {
+  animation: pulse 1.5s infinite;
+}
+
+/* تأثيرات تظهر عناصر الصفحة مع التمرير */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+/* تأثير النقاط المتحركة في الخلفية */
+@keyframes dotMovement {
+  0% { 
+    background-position: 0 0, 20px 20px;
+    opacity: 0.2;
+  }
+  25% {
+    opacity: 0.3;
+  }
+  50% { 
+    background-position: 20px 0, 0 20px;
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.3;
+  }
+  100% { 
+    background-position: 0 0, 20px 20px;
+    opacity: 0.2;
+  }
+}
+
+@keyframes dotRotation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* إضافة النقاط المتحركة للخلفية */
+.animated-dots-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* لتجنب تأثيرها على الضغط على العناصر خلفها */
+  z-index: 0;
+  overflow: hidden;
+}
+
+.animated-dots-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 2.5px, transparent 2.5px),
+                    radial-gradient(circle, rgba(255, 255, 255, 0.15) 2px, transparent 2px);
+  background-size: 60px 60px, 50px 50px;
+  background-position: 0 0, 20px 20px;
+  animation: dotMovement 20s infinite linear, dotRotation 120s infinite linear;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* تأثيرات إضافية للعناصر التفاعلية */
+.btn-glass, .form-input {
+  transition: all 0.3s ease;
+}
+
+.btn-glass:hover {
+  animation: pulse 1.5s infinite, borderGlow 4s infinite;
+}
+
+/* تأثير لعناصر Loading */
+.page-spin {
+  animation: spinGlow 2s infinite linear;
+}

@@ -1,0 +1,203 @@
+/* Clases base para las animaciones del dashboard */
+.animate-on-scroll {
+  opacity: 0;
+  transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform, opacity;
+}
+
+.animate-visible {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1) rotate(0) !important;
+}
+
+/* Animaciones específicas */
+.animate-fade-in {
+  opacity: 0.8;
+}
+
+.animate-fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.animate-fade-down {
+  opacity: 0;
+  transform: translateY(-30px);
+}
+
+/* Clase para sidebar y otros elementos que deben ser visibles siempre */
+.animate-no-hide {
+  opacity: 1;
+}
+
+.animate-zoom-in {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.animate-glow {
+  animation: glow 3s infinite alternate;
+}
+
+/* Efectos interactivos para los proyectos */
+.project {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.project:hover {
+  transform: translateY(-5px);
+  box-shadow: rgba(50, 50, 93, 0.35) 0px 12px 18px -2px, rgba(0, 0, 0, 0.4) 0px 6px 10px -3px;
+}
+
+.project .button-group {
+  transition: all 0.3s ease;
+}
+
+.project:hover .button-group {
+  background-color: rgba(49, 34, 68, 0.3);
+  border-radius: 0 0 4px 4px;
+}
+
+.project .pro-img {
+  transition: all 0.4s ease;
+  overflow: hidden;
+}
+
+.project:hover .pro-img img {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  transition: all 0.4s ease;
+}
+
+/* Pulsación para elementos interactivos */
+.drag-handle {
+  cursor: grab;
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+
+.project:hover .drag-handle {
+  opacity: 1;
+  animation: none;
+}
+
+/* Animaciones para botones */
+.form-submit-button,
+.add-project-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.form-submit-button:hover,
+.add-project-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(84, 58, 183, 0.3);
+}
+
+.form-submit-button:active, 
+.add-project-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(84, 58, 183, 0.3);
+}
+
+.form-submit-button:before,
+.add-project-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: all 0.5s ease;
+}
+
+.form-submit-button:hover:before,
+.add-project-btn:hover:before {
+  left: 100%;
+}
+
+/* Animación de brillo para instrucciones */
+.order-instructions {
+  animation: glow 3s infinite alternate;
+  transform-origin: left center;
+}
+
+.order-instructions:hover {
+  animation: glow 3s infinite alternate, wiggle 0.5s ease;
+}
+
+@keyframes wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(0.5deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 10px rgba(77, 25, 77, 0.1); }
+  to { box-shadow: 0 0 15px rgba(77, 25, 77, 0.5); }
+}
+
+/* Efectos para Cards del Dashboard */
+.dashboard-card {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Animación para enlaces de la barra lateral */
+.sidebar-link {
+  transition: background-color 0.3s, color 0.3s, transform 0.2s;
+  opacity: 1 !important; /* Siempre visible */
+}
+
+.sidebar-link:hover {
+  transform: translateX(5px);
+}
+
+/* Asegurar que elementos críticos como el sidebar siempre sean visibles */
+.sidebar, .dashboard-page {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+/* Animación para spinner de carga */
+.page-spin {
+  animation: appear 0.5s ease, rotate 1.5s infinite linear;
+}
+
+@keyframes appear {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Efectos para botones específicos */
+.add-project-btn, .form-submit-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+@keyframes pulseButton {
+  0% { box-shadow: 0 0 0 0 rgba(84, 58, 183, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(84, 58, 183, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(84, 58, 183, 0); }
+}
