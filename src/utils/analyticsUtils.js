@@ -6,6 +6,16 @@ const GECODER_OPENCAGE_API_KEY = process.env.REACT_APP_OPENCAGE_API_KEY;
 // Get location info using OpenCage Geocoder
 const getLocationInfo = async () => {
   try {
+    // Check if location tracking is enabled
+    const { data: config } = await supabase
+      .from("dashboard_config")
+      .select("track_location")
+      .single();
+
+    if (!config || !config.track_location) {
+      return { country: "Unknown", city: "Unknown" };
+    }
+
     // First get user's coordinates
     const position = await new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -229,105 +239,81 @@ export const fetchVisitStats = async () => {
     const { data: totalStats, error: totalStatsError } = await supabase
       .from("visit_stats")
       .select("*")
-      .eq("id", 1) // Fetch record with ID 1
-      .single(); // Expect a single record
+      .eq("id", 1)
+      .single();
 
-    // Log any error fetching total visits
     if (totalStatsError) {
       console.error("Error fetching total visits:", totalStatsError);
       return null;
     }
 
-    // Calculate date ranges for filtering visits (today, last week, last month)
+    // Calculate date ranges for filtering visits
     const today = new Date();
-    const weekAgo = new Date();
-    weekAgo.setDate(today.getDate() - 7); // 7 days ago
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
 
-    const monthAgo = new Date();
-    monthAgo.setDate(today.getDate() - 30); // 30 days ago
+    const monthAgo = new Date(today);
+    monthAgo.setDate(today.getDate() - 30);
 
-    const todayStr = today.toISOString().split("T")[0]; // Today's date (YYYY-MM-DD)
-    const weekAgoStr = weekAgo.toISOString(); // ISO string for 7 days ago
-    const monthAgoStr = monthAgo.toISOString(); // ISO string for 30 days ago
+    const todayStr = today.toISOString().split("T")[0];
+    const weekAgoStr = weekAgo.toISOString();
+    const monthAgoStr = monthAgo.toISOString();
 
-    // Fetch homepage visits for today
-    const { data: todayVisits, error: todayError } = await supabase
-      .from("page_visits")
-      .select("*")
-      .eq("page_type", "home") // Filter for homepage visits
-      .gte("visit_date", todayStr); // Visits on or after today
+    // Fetch all visit data in parallel
+    const [
+      todayVisits,
+      weekVisits,
+      monthVisits,
+      projectVisits,
+      visitsData,
+      locationData,
+    ] = await Promise.all([
+      // Today's visits
+      supabase
+        .from("page_visits")
+        .select("*")
+        .eq("page_type", "home")
+        .gte("visit_date", todayStr),
 
-    // Log any error fetching today's visits
-    if (todayError) {
-      console.error("Error fetching today visits:", todayError);
-    }
+      // Week's visits
+      supabase
+        .from("page_visits")
+        .select("*")
+        .eq("page_type", "home")
+        .gte("visit_date", weekAgoStr),
 
-    // Fetch homepage visits for the last week
-    const { data: weekVisits, error: weekError } = await supabase
-      .from("page_visits")
-      .select("*")
-      .eq("page_type", "home") // Filter for homepage visits
-      .gte("visit_date", weekAgoStr); // Visits on or after 7 days ago
+      // Month's visits
+      supabase
+        .from("page_visits")
+        .select("*")
+        .eq("page_type", "home")
+        .gte("visit_date", monthAgoStr),
 
-    // Log any error fetching week's visits
-    if (weekError) {
-      console.error("Error fetching week visits:", weekError);
-    }
+      // Project visits
+      supabase
+        .from("page_visits")
+        .select("project_id, project_name")
+        .eq("page_type", "project"),
 
-    // Fetch homepage visits for the last month
-    const { data: monthVisits, error: monthError } = await supabase
-      .from("page_visits")
-      .select("*")
-      .eq("page_type", "home") // Filter for homepage visits
-      .gte("visit_date", monthAgoStr); // Visits on or after 30 days ago
+      // User agent and referrer data
+      supabase.from("page_visits").select("user_agent, referer"),
 
-    // Log any error fetching month's visits
-    if (monthError) {
-      console.error("Error fetching month visits:", monthError);
-    }
+      // Location data
+      supabase.from("page_visits").select("country, city"),
+    ]);
 
-    // Fetch project visit statistics
-    const { data: rawProjectVisits, error: projectError } = await supabase
-      .from("page_visits")
-      .select("project_id, project_name") // Select only relevant fields
-      .eq("page_type", "project"); // Filter for project visits
-
-    // Log any error fetching project visits
-    if (projectError) {
-      console.error("Error fetching project visits:", projectError);
-    }
-
-    // Manually process project visits to group and count by project
-    const projectVisits = [];
-    const projectCounts = {};
-
-    if (rawProjectVisits && rawProjectVisits.length > 0) {
-      // Group and count visits by project_id and project_name
-      rawProjectVisits.forEach((visit) => {
-        const key = `${visit.project_id}:${visit.project_name}`; // Unique key for grouping
-        if (!projectCounts[key]) {
-          projectCounts[key] = {
-            project_id: visit.project_id,
-            project_name: visit.project_name,
-            count: 0, // Initialize count
-          };
-        }
-        projectCounts[key].count++; // Increment count for this project
+    // Process project visits
+    const projectStats = {};
+    if (projectVisits.data) {
+      projectVisits.data.forEach((visit) => {
+        const key = `${visit.project_id}:${visit.project_name}`;
+        projectStats[key] = projectStats[key] || {
+          project_id: visit.project_id,
+          project_name: visit.project_name,
+          count: 0,
+        };
+        projectStats[key].count++;
       });
-
-      // Convert grouped counts to an array
-      Object.values(projectCounts).forEach((item) => {
-        projectVisits.push(item);
-      });
-    }
-
-    // Fetch user agent statistics
-    const { data: visitsData, error: visitsError } = await supabase
-      .from("page_visits")
-      .select("user_agent, referer");
-
-    if (visitsError) {
-      console.error("Error fetching visits data:", visitsError);
     }
 
     // Process user agent statistics
@@ -335,52 +321,60 @@ export const fetchVisitStats = async () => {
     const browserStats = {};
     const referrerStats = {};
 
-    if (visitsData && visitsData.length > 0) {
-      visitsData.forEach((visit) => {
+    if (visitsData.data && visitsData.data.length > 0) {
+      visitsData.data.forEach((visit) => {
         const userAgent = visit.user_agent;
 
         // Process device type
         let deviceType = "Unknown";
-        if (userAgent.includes("Mobile")) {
+        if (
+          userAgent.includes("Mobile") ||
+          userAgent.includes("Android") ||
+          userAgent.includes("iPhone") ||
+          userAgent.includes("iPad") ||
+          userAgent.includes("Windows Phone")
+        ) {
           deviceType = "Mobile";
-        } else if (userAgent.includes("Tablet")) {
-          deviceType = "Tablet";
         } else if (
           userAgent.includes("Windows") ||
           userAgent.includes("Macintosh") ||
-          userAgent.includes("Linux")
+          userAgent.includes("Linux") ||
+          userAgent.includes("X11")
         ) {
           deviceType = "Desktop";
+        } else if (
+          userAgent.includes("Tablet") ||
+          (userAgent.includes("Android") && !userAgent.includes("Mobile"))
+        ) {
+          deviceType = "Tablet";
         }
 
         // Process browser type
         let browserType = "Other";
-        if (userAgent.includes("Chrome") && !userAgent.includes("Edg")) {
+        // Check Edge first because it also includes Chrome and Safari in its UA string
+        if (userAgent.includes("Edg/")) {
+          browserType = "Edge";
+        } else if (
+          userAgent.includes("Chrome/") &&
+          !userAgent.includes("Edge/")
+        ) {
           browserType = "Chrome";
-        } else if (userAgent.includes("Firefox")) {
+        } else if (userAgent.includes("Firefox/")) {
           browserType = "Firefox";
         } else if (
-          userAgent.includes("Safari") &&
-          !userAgent.includes("Chrome")
+          userAgent.includes("Safari/") &&
+          !userAgent.includes("Chrome/")
         ) {
           browserType = "Safari";
-        } else if (userAgent.includes("Edg")) {
-          browserType = "Edge";
-        } else if (userAgent.includes("Opera")) {
+        } else if (userAgent.includes("OPR/") || userAgent.includes("Opera/")) {
           browserType = "Opera";
         }
 
         // Update device stats
-        if (!userAgentStats[deviceType]) {
-          userAgentStats[deviceType] = 0;
-        }
-        userAgentStats[deviceType]++;
+        userAgentStats[deviceType] = (userAgentStats[deviceType] || 0) + 1;
 
         // Update browser stats
-        if (!browserStats[browserType]) {
-          browserStats[browserType] = 0;
-        }
-        browserStats[browserType]++;
+        browserStats[browserType] = (browserStats[browserType] || 0) + 1;
 
         // Process referrer
         const referrer = visit.referer || "Direct Link";
@@ -388,95 +382,46 @@ export const fetchVisitStats = async () => {
           referrer === "Direct Link"
             ? "Direct Link"
             : new URL(referrer).hostname || "Unknown";
-
-        if (!referrerStats[referrerDomain]) {
-          referrerStats[referrerDomain] = 0;
-        }
-        referrerStats[referrerDomain]++;
+        referrerStats[referrerDomain] =
+          (referrerStats[referrerDomain] || 0) + 1;
       });
-    }
-
-    // Convert stats to array format for charts
-    const userAgentData = Object.entries(userAgentStats).map(
-      ([name, value]) => ({
-        name,
-        visits: value,
-      })
-    );
-
-    const browserData = Object.entries(browserStats).map(([name, value]) => ({
-      name,
-      visits: value,
-    }));
-
-    const referrerData = Object.entries(referrerStats).map(([name, value]) => ({
-      name,
-      visits: value,
-    }));
-
-    // Sort data by visit count
-    userAgentData.sort((a, b) => b.visits - a.visits);
-    browserData.sort((a, b) => b.visits - a.visits);
-    referrerData.sort((a, b) => b.visits - a.visits);
-
-    // Fetch location statistics
-    const { data: locationData, error: locationError } = await supabase
-      .from("page_visits")
-      .select("country, city");
-
-    if (locationError) {
-      console.error("Error fetching location data:", locationError);
     }
 
     // Process location statistics
     const countryStats = {};
     const cityStats = {};
 
-    if (locationData && locationData.length > 0) {
-      locationData.forEach((visit) => {
-        // Process country stats
+    if (locationData.data) {
+      locationData.data.forEach((visit) => {
         const country = visit.country || "Unknown";
-        if (!countryStats[country]) {
-          countryStats[country] = 0;
-        }
-        countryStats[country]++;
-
-        // Process city stats
         const city = visit.city || "Unknown";
-        if (!cityStats[city]) {
-          cityStats[city] = 0;
-        }
-        cityStats[city]++;
+
+        countryStats[country] = (countryStats[country] || 0) + 1;
+        cityStats[city] = (cityStats[city] || 0) + 1;
       });
     }
 
-    // Convert location stats to array format for charts
-    const countryData = Object.entries(countryStats)
-      .map(([name, visits]) => ({ name, visits }))
-      .sort((a, b) => b.visits - a.visits);
+    // Convert stats to array format and sort
+    const formatStats = (stats) =>
+      Object.entries(stats)
+        .map(([name, visits]) => ({ name, visits }))
+        .sort((a, b) => b.visits - a.visits);
 
-    const cityData = Object.entries(cityStats)
-      .map(([name, visits]) => ({ name, visits }))
-      .sort((a, b) => b.visits - a.visits)
-      .slice(0, 10); // Show top 10 cities only
-
-    // Return stats including the location data
     return {
       totalVisits: totalStats?.total_visits || 0,
-      todayHomeVisits: todayVisits?.length || 0,
-      weekHomeVisits: weekVisits?.length || 0,
-      monthHomeVisits: monthVisits?.length || 0,
-      projectVisits: projectVisits || [],
-      userAgentData,
-      browserData,
-      referrerData,
-      countryData,
-      cityData,
+      todayHomeVisits: todayVisits.data?.length || 0,
+      weekHomeVisits: weekVisits.data?.length || 0,
+      monthHomeVisits: monthVisits.data?.length || 0,
+      projectVisits: Object.values(projectStats),
+      userAgentData: formatStats(userAgentStats),
+      browserData: formatStats(browserStats),
+      referrerData: formatStats(referrerStats),
+      countryData: formatStats(countryStats),
+      cityData: formatStats(cityStats).slice(0, 10),
       lastUpdated: totalStats?.last_updated,
     };
   } catch (error) {
-    // Log any unexpected errors in the function
     console.error("Error in fetchVisitStats:", error);
-    return null; // Return null on error
+    return null;
   }
 };

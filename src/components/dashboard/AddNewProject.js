@@ -1,6 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import FeaturesForm from "./features/FeaturesForm";
 
 /**
  * AddNewProject Component
@@ -87,214 +94,298 @@ const AddNewProject = () => {
     checkSession();
   }, [navigate]);
 
-  const handleSelectTech = (techId) => {
-    const tech = availableTechs.find((t) => t.id === techId);
-    if (tech) {
-      setAvailableTechs(availableTechs.filter((t) => t.id !== techId));
-      setSelectedTechs([...selectedTechs, tech]);
-    }
-  };
+  const handleSelectTech = useCallback(
+    (techId) => {
+      const tech = availableTechs.find((t) => t.id === techId);
+      if (tech) {
+        setAvailableTechs(availableTechs.filter((t) => t.id !== techId));
+        setSelectedTechs([...selectedTechs, tech]);
+      }
+    },
+    [availableTechs, selectedTechs]
+  );
 
-  const handleDeselectTech = (techId) => {
-    const tech = selectedTechs.find((t) => t.id === techId);
-    if (tech) {
-      setSelectedTechs(selectedTechs.filter((t) => t.id !== techId));
-      setAvailableTechs([...availableTechs, tech]);
-    }
-  };
+  const handleDeselectTech = useCallback(
+    (techId) => {
+      const tech = selectedTechs.find((t) => t.id === techId);
+      if (tech) {
+        setSelectedTechs(selectedTechs.filter((t) => t.id !== techId));
+        setAvailableTechs([...availableTechs, tech]);
+      }
+    },
+    [availableTechs, selectedTechs]
+  );
 
-  const handleAddFeature = () => {
+  const handleAddFeature = useCallback(() => {
     if (newFeature.trim() !== "") {
-      setFeatures([...features, newFeature]);
+      setFeatures((prev) => [...prev, newFeature]);
       setNewFeature("");
     }
-  };
+  }, [newFeature]);
 
-  const handleDeleteFeature = (index) => {
-    const updatedFeatures = features.filter((_, i) => i !== index);
-    setFeatures(updatedFeatures);
-  };
+  const handleDeleteFeature = useCallback((index) => {
+    setFeatures((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const handleEditFeature = (index) => {
-    setEditingIndex(index);
-    setEditingValue(features[index]);
-  };
+  const handleEditFeature = useCallback(
+    (index) => {
+      setEditingIndex(index);
+      setEditingValue(features[index]);
+    },
+    [features]
+  );
 
-  const handleSaveFeature = () => {
+  const handleSaveFeature = useCallback(() => {
     if (editingValue.trim() !== "") {
-      const updatedFeatures = [...features];
-      updatedFeatures[editingIndex] = editingValue;
-      setFeatures(updatedFeatures);
+      setFeatures((prev) => {
+        const updated = [...prev];
+        updated[editingIndex] = editingValue;
+        return updated;
+      });
       setEditingIndex(null);
       setEditingValue("");
     }
-  };
+  }, [editingValue, editingIndex]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleAddFeature();
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        handleAddFeature();
+      }
+    },
+    [handleAddFeature]
+  );
+
+  const handleNewFeatureChange = useCallback((value) => {
+    setNewFeature(value);
+  }, []);
+
+  const handleEditValueChange = useCallback((value) => {
+    setEditingValue(value);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingIndex(null);
+    setEditingValue("");
+  }, []);
 
   /**
    * Image upload handler
    * @param {Event} e - Upload input change event
    * Processes and validates image files before upload
    */
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setProjectThumbPreview(URL.createObjectURL(file));
+  const cleanupImage = useCallback(() => {
+    if (projectThumbPreview) {
+      URL.revokeObjectURL(projectThumbPreview);
     }
-  };
+  }, [projectThumbPreview]);
+
+  useEffect(() => {
+    return () => {
+      cleanupImage();
+    };
+  }, [cleanupImage]);
+
+  const handleImageUpload = useCallback(
+    async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        cleanupImage(); // تنظيف URL القديم قبل إنشاء واحد جديد
+        setSelectedFile(file);
+        setProjectThumbPreview(URL.createObjectURL(file));
+      }
+    },
+    [cleanupImage]
+  );
 
   /**
    * Form submission handler
    * Validates form data and creates new project entry
    * @param {Event} e - Form submission event
    */
-  const handleSubmit = async (e) => {
-    if (
-      !projectName ||
-      !description ||
-      !demoLink ||
-      !selectedFile ||
-      selectedTechs.length === 0 ||
-      features.length === 0
-    ) {
-      setInfoMessage("Please fill in all required fields.");
-      setTimeout(() => setInfoMessage(""), 3000);
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e) => {
+      if (
+        !projectName ||
+        !description ||
+        !demoLink ||
+        !selectedFile ||
+        selectedTechs.length === 0 ||
+        features.length === 0
+      ) {
+        setInfoMessage("Please fill in all required fields.");
+        setTimeout(() => setInfoMessage(""), 3000);
+        return;
+      }
 
-    setIsSaving(true);
+      setIsSaving(true);
 
-    const file = selectedFile;
-    const fileExt = file.name.split(".").pop();
-    const filePath = `project-thumbs/${profileId}-${Date.now()}.${fileExt}`;
+      try {
+        const file = selectedFile;
+        const fileExt = file.name.split(".").pop();
+        const filePath = `project-thumbs/${profileId}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("projects-thumbnails")
-      .upload(filePath, file, { upsert: true });
+        const { error: uploadError } = await supabase.storage
+          .from("projects-thumbnails")
+          .upload(filePath, file, { upsert: true });
 
-    if (uploadError) {
-      console.error("Failed to upload the thumbnail! Error:", uploadError);
-      setIsSaving(false);
-      setInfoMessage("Failed to upload the thumbnail. Please try again.");
-      setTimeout(() => setInfoMessage(""), 3000);
-      return;
-    }
+        if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from("projects-thumbnails")
-      .getPublicUrl(filePath);
+        const { data: urlData } = supabase.storage
+          .from("projects-thumbnails")
+          .getPublicUrl(filePath);
 
-    const thumbnailUrl = urlData.publicUrl;
+        const thumbnailUrl = urlData.publicUrl;
 
-    // Get current max display_order
-    const { data: existingProjects, error: fetchError } = await supabase
-      .from("projects")
-      .select("display_order")
-      .eq("profile_id", profileId)
-      .order("display_order", { ascending: false })
-      .limit(1);
+        const { data: existingProjects, error: fetchError } = await supabase
+          .from("projects")
+          .select("display_order")
+          .eq("profile_id", profileId)
+          .order("display_order", { ascending: false })
+          .limit(1);
 
-    // Calculate next display order (max + 1 or 1 if no projects exist)
-    const nextDisplayOrder =
-      existingProjects && existingProjects.length > 0
-        ? (existingProjects[0].display_order || 0) + 1
-        : 1;
+        if (fetchError) throw fetchError;
 
-    const techIds = selectedTechs.map((tech) => tech.id);
-    const projectData = {
-      name: projectName,
+        const nextDisplayOrder =
+          existingProjects && existingProjects.length > 0
+            ? (existingProjects[0].display_order || 0) + 1
+            : 1;
+
+        const techIds = selectedTechs.map((tech) => tech.id);
+        const projectData = {
+          name: projectName,
+          description,
+          demoLink,
+          githubLink,
+          thumbnailUrl,
+          profile_id: profileId,
+          techs: techIds,
+          features,
+          display_order: nextDisplayOrder,
+        };
+
+        const { data, error } = await supabase
+          .from("projects")
+          .insert(projectData)
+          .select();
+
+        if (error) throw error;
+
+        console.log("Project saved successfully:", data);
+        setInfoMessage("Project saved successfully");
+
+        // Reset form
+        setProjectName("");
+        setDescription("");
+        setDemoLink("");
+        setGithubLink("");
+        setSelectedTechs([]);
+        setSelectedFile(null);
+        setProjectThumbPreview("");
+        setFeatures([]);
+        setAvailableTechs(originalAvailableTechs);
+      } catch (error) {
+        console.error("Failed to save the project! Error:", error);
+        setInfoMessage("Failed to save the project. Please try again.");
+      } finally {
+        setTimeout(() => setInfoMessage(""), 3000);
+        setIsSaving(false);
+      }
+    },
+    [
+      projectName,
       description,
       demoLink,
       githubLink,
-      thumbnailUrl,
-      profile_id: profileId,
-      techs: techIds,
+      selectedFile,
+      selectedTechs,
       features,
-      display_order: nextDisplayOrder, // Assign the next display order
-    };
+      profileId,
+      originalAvailableTechs,
+    ]
+  );
 
-    if (fetchError) {
-      console.error("Error getting current project order:", fetchError);
-    }
-
-    const { data, error } = await supabase
-      .from("projects")
-      .insert(projectData)
-      .select();
-
-    if (error) {
-      console.error("Failed to save the project! Error:", error);
-      setInfoMessage("Failed to save the project. Please try again.");
-      setTimeout(() => setInfoMessage(""), 3000);
-    } else {
-      console.log("Project saved successfully:", data);
-      setInfoMessage("Project saved successfully");
-      setTimeout(() => setInfoMessage(""), 3000);
-      setProjectName("");
-      setDescription("");
-      setDemoLink("");
-      setGithubLink("");
-      setSelectedTechs([]);
-      setSelectedFile(null);
-      setProjectThumbPreview("");
-      setFeatures([]);
-      setAvailableTechs(originalAvailableTechs);
-    }
-
-    setIsSaving(false);
-  };
-
-  /**
-   * Technology stack selector
-   * Manages the multi-select interface for project technologies
-   */
-  const TechSelector = () => {
-    return (
-      <div className="select-technologies">
-        <div className="tech-selection">
-          <div className="available-techs">
-            <h2>Available Technologies</h2>
-            <div className="tech-list">
-              {availableTechs.map((tech) => (
-                <div
-                  key={tech.id}
-                  className="tech-item"
-                  onClick={() => handleSelectTech(tech.id)}
-                >
-                  <img src={tech.logo_url} alt={tech.name} width="50" />
-                  <h4>{tech.name}</h4>
-                </div>
-              ))}
+  // Instead of storing JSX in a variable, create a memoized component
+  const TechSelectorComponent = useMemo(() => {
+    return function TechSelector() {
+      return (
+        <div className="select-technologies">
+          <div className="tech-selection">
+            <div className="available-techs">
+              <h2>Available Technologies</h2>
+              <div className="tech-list">
+                {availableTechs.map((tech) => (
+                  <div
+                    key={tech.id}
+                    className="tech-item"
+                    onClick={() => handleSelectTech(tech.id)}
+                  >
+                    <img src={tech.logo_url} alt={tech.name} width="50" />
+                    <h4>{tech.name}</h4>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="selected-techs">
-            <h2>Selected Technologies</h2>
-            <div className="tech-list">
-              {selectedTechs.map((tech) => (
-                <div
-                  key={tech.id}
-                  className="tech-item"
-                  onClick={() => handleDeselectTech(tech.id)}
-                >
-                  <img src={tech.logo_url} alt={tech.name} width="50" />
-                  <h4>{tech.name}</h4>
-                </div>
-              ))}
+            <div className="selected-techs">
+              <h2>Selected Technologies</h2>
+              <div className="tech-list">
+                {selectedTechs.map((tech) => (
+                  <div
+                    key={tech.id}
+                    className="tech-item"
+                    onClick={() => handleDeselectTech(tech.id)}
+                  >
+                    <img src={tech.logo_url} alt={tech.name} width="50" />
+                    <h4>{tech.name}</h4>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
+  }, [availableTechs, selectedTechs, handleSelectTech, handleDeselectTech]);
+
+  // تحسين أداء النموذج باستخدام useMemo للقيم المحسوبة
+  const formData = useMemo(
+    () => ({
+      features,
+      newFeature,
+      editingIndex,
+      editingValue,
+      onFeatureAdd: handleAddFeature,
+      onFeatureDelete: handleDeleteFeature,
+      onFeatureEdit: handleEditFeature,
+      onFeatureSave: handleSaveFeature,
+      onNewFeatureChange: handleNewFeatureChange,
+      onEditValueChange: handleEditValueChange,
+      onKeyDown: handleKeyDown,
+      onCancelEdit: handleCancelEdit,
+    }),
+    [
+      features,
+      newFeature,
+      editingIndex,
+      editingValue,
+      handleAddFeature,
+      handleDeleteFeature,
+      handleEditFeature,
+      handleSaveFeature,
+      handleNewFeatureChange,
+      handleEditValueChange,
+      handleKeyDown,
+      handleCancelEdit,
+    ]
+  );
+
+  // تحسين أداء معالجة حالة التحميل
+  const renderLoading = useCallback(() => {
+    return <div className="page-spin"></div>;
+  }, []);
 
   if (isLoading) {
-    return <div className="page-spin"></div>;
+    return renderLoading();
   }
 
   return (
@@ -343,7 +434,7 @@ const AddNewProject = () => {
               id="github-link"
             />
           </div>
-          <TechSelector />
+          <TechSelectorComponent />
         </div>
         <div className="sec-pro">
           <div className="thumb">
@@ -375,56 +466,7 @@ const AddNewProject = () => {
               onChange={handleImageUpload}
             />
           </div>
-          <div className="features">
-            <h2>Features</h2>
-            <div className="input-field">
-              <input
-                className="add-pro-input"
-                placeholder="Add New Feature"
-                type="text"
-                value={editingIndex !== null ? editingValue : newFeature}
-                onChange={(e) =>
-                  editingIndex !== null
-                    ? setEditingValue(e.target.value)
-                    : setNewFeature(e.target.value)
-                }
-                onKeyDown={handleKeyDown}
-              />
-              <button
-                onClick={
-                  editingIndex !== null ? handleSaveFeature : handleAddFeature
-                }
-              >
-                {editingIndex !== null ? "Save" : "Add"}
-              </button>
-              {editingIndex !== null && (
-                <button onClick={() => setEditingIndex(null)}>Cancel</button>
-              )}
-            </div>
-            <div className="features-list">
-              {features.map((feature, index) => (
-                <div key={index} className="feature-item">
-                  <span>{feature}</span>
-                  <div>
-                    <button
-                      className="edit-fea"
-                      title="Edit"
-                      onClick={() => handleEditFeature(index)}
-                    >
-                      <i className="fa-solid fa-pen"></i>
-                    </button>
-                    <button
-                      className="delete-fea"
-                      title="Delete"
-                      onClick={() => handleDeleteFeature(index)}
-                    >
-                      <i className="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FeaturesForm {...formData} />
         </div>
       </div>
       <button className="prof-btn" onClick={handleSubmit} disabled={isSaving}>

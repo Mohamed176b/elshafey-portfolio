@@ -12,7 +12,7 @@ import { clearUserSession } from "../../utils/authUtils";
 // TechItem Component - Extracted to improve performance
 const TechItem = React.memo(({ tech, onDelete }) => (
   <div className="tech-item">
-    {tech.logo_url && <img src={tech.logo_url} alt={tech.name} width="50" />}
+    {tech.logo_url && <img src={tech.logo_url} alt={tech.name} width="50" loading="lazy" />}
     <h4>{tech.name}</h4>
     <i className="fa-solid fa-xmark" onClick={() => onDelete(tech.id)}></i>
   </div>
@@ -85,6 +85,7 @@ const Settings = () => {
     maxLength: 70, // Maximum description length
     numberOfProjects: 3, // Number of projects to display
     numberOfMessages: 3, // Number of messages to display
+    trackLocation: true, // إضافة الخيار الجديد
   });
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
@@ -119,6 +120,7 @@ const Settings = () => {
           maxLength: config.max_length || 70,
           numberOfProjects: config.number_of_projects || 3,
           numberOfMessages: config.number_of_messages || 3,
+          trackLocation: config.track_location ?? true, // إضافة القيمة الافتراضية
         });
         console.log("Dashboard config loaded successfully");
       } else {
@@ -323,6 +325,7 @@ const Settings = () => {
         max_length: dashboardConfig.maxLength,
         number_of_projects: dashboardConfig.numberOfProjects,
         number_of_messages: dashboardConfig.numberOfMessages,
+        track_location: dashboardConfig.trackLocation,
         updated_at: new Date().toISOString(),
       };
 
@@ -366,6 +369,14 @@ const Settings = () => {
     setDashboardConfig((prev) => ({
       ...prev,
       [field]: numValue,
+    }));
+  }, []);
+
+  // Function to handle toggle switch change
+  const handleToggleChange = useCallback((checked) => {
+    setDashboardConfig((prev) => ({
+      ...prev,
+      trackLocation: checked,
     }));
   }, []);
 
@@ -422,7 +433,7 @@ const Settings = () => {
               {isTechLogoUploading ? (
                 <div className="spin-loading-tech-logo"></div> // Show spinner during upload
               ) : newTechLogo ? (
-                <img src={URL.createObjectURL(newTechLogo)} alt="Tech Logo" /> // Preview selected logo
+                <img src={URL.createObjectURL(newTechLogo)} alt="Tech Logo" loading="lazy"/> // Preview selected logo
               ) : (
                 <span>Logo</span> // Placeholder text
               )}
@@ -525,6 +536,21 @@ const Settings = () => {
               isDecrementDisabled={dashboardConfig.numberOfMessages <= 1}
               isIncrementDisabled={dashboardConfig.numberOfMessages >= 10}
             />
+
+            <div className="config-item toggle-item">
+              <label htmlFor="trackLocation">
+                Track visitor location (country and city)
+              </label>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  id="trackLocation"
+                  checked={dashboardConfig.trackLocation}
+                  onChange={(e) => handleToggleChange(e.target.checked)}
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
 
             <button
               className="save-config-btn theme-button"

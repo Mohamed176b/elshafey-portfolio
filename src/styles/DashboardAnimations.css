@@ -71,7 +71,11 @@
 
 /* Pulsación para elementos interactivos */
 .drag-handle {
+  font-size: 25px;
   cursor: grab;
+  position: absolute;
+  z-index: 100;
+  left: -10px;
   transition: all 0.3s ease;
   animation: pulse 2s infinite ease-in-out;
 }

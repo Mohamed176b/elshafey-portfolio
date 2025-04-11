@@ -1,6 +1,75 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
+
+// المكونات المحسنة
+const Toast = React.memo(({ message }) => (
+  <div className="toast">{message}</div>
+));
+
+const LoadingSpinner = React.memo(() => <div className="page-spin"></div>);
+
+// مكون TechItem المحسن للقائمة
+const TechItem = React.memo(({ tech, onClick, children }) => (
+  <div key={tech.id} className="tech-item" onClick={() => onClick(tech.id)}>
+    <img src={tech.logo_url} alt={tech.name} width="50" loading="lazy" />
+    <h4>{tech.name}</h4>
+    {children}
+  </div>
+));
+
+// مكون TechList المحسن مع التقسيم المنطقي
+const TechList = React.memo(({ techs, onTechClick, title }) => {
+  const [showMore, setShowMore] = useState(false);
+
+  const visibleTechs = useMemo(
+    () => (showMore ? techs : techs.slice(0, 20)),
+    [techs, showMore]
+  );
+
+  return (
+    <div>
+      <h2>{title}</h2>
+      <div className="tech-list">
+        {visibleTechs.map((tech) => (
+          <TechItem key={tech.id} tech={tech} onClick={onTechClick} />
+        ))}
+        {!showMore && techs.length > 20 && (
+          <div className="load-more">
+            <button onClick={() => setShowMore(true)}>
+              Show More ({techs.length - 20})
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// مكون FeatureItem المحسن
+const FeatureItem = React.memo(({ feature, index, onEdit, onDelete }) => (
+  <div className="feature-item">
+    <span>{feature}</span>
+    <div>
+      <button className="edit-fea" title="Edit" onClick={() => onEdit(index)}>
+        <i className="fa-solid fa-pen"></i>
+      </button>
+      <button
+        className="delete-fea"
+        title="Delete"
+        onClick={() => onDelete(index)}
+      >
+        <i className="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>
+));
 
 const EditProject = () => {
   const [projectName, setProjectName] = useState("");
@@ -117,56 +186,69 @@ const EditProject = () => {
     }
   }, [profileId, originalAvailableTechs, projectId]);
 
-  const handleSelectTech = (techId) => {
-    const tech = availableTechs.find((t) => t.id === techId);
-    if (tech) {
-      setAvailableTechs(availableTechs.filter((t) => t.id !== techId));
-      setSelectedTechs([...selectedTechs, tech]);
-    }
-  };
+  const handleSelectTech = useCallback(
+    (techId) => {
+      const tech = availableTechs.find((t) => t.id === techId);
+      if (tech) {
+        setAvailableTechs(availableTechs.filter((t) => t.id !== techId));
+        setSelectedTechs([...selectedTechs, tech]);
+      }
+    },
+    [availableTechs, selectedTechs]
+  );
 
-  const handleDeselectTech = (techId) => {
-    const tech = selectedTechs.find((t) => t.id === techId);
-    if (tech) {
-      setSelectedTechs(selectedTechs.filter((t) => t.id !== techId));
-      setAvailableTechs([...availableTechs, tech]);
-    }
-  };
+  const handleDeselectTech = useCallback(
+    (techId) => {
+      const tech = selectedTechs.find((t) => t.id === techId);
+      if (tech) {
+        setSelectedTechs(selectedTechs.filter((t) => t.id !== techId));
+        setAvailableTechs([...availableTechs, tech]);
+      }
+    },
+    [availableTechs, selectedTechs]
+  );
 
-  const handleAddFeature = () => {
+  const handleAddFeature = useCallback(() => {
     if (newFeature.trim() !== "") {
-      setFeatures([...features, newFeature]);
+      setFeatures((prev) => [...prev, newFeature]);
       setNewFeature("");
     }
-  };
+  }, [newFeature]);
 
-  const handleDeleteFeature = (index) => {
-    const updatedFeatures = features.filter((_, i) => i !== index);
-    setFeatures(updatedFeatures);
-  };
+  const handleDeleteFeature = useCallback((index) => {
+    setFeatures((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const handleEditFeature = (index) => {
-    setEditingIndex(index);
-    setEditingValue(features[index]);
-  };
+  const handleEditFeature = useCallback(
+    (index) => {
+      setEditingIndex(index);
+      setEditingValue(features[index]);
+    },
+    [features]
+  );
 
-  const handleSaveFeature = () => {
+  const handleSaveFeature = useCallback(() => {
     if (editingValue.trim() !== "") {
-      const updatedFeatures = [...features];
-      updatedFeatures[editingIndex] = editingValue;
-      setFeatures(updatedFeatures);
+      setFeatures((prev) => {
+        const updated = [...prev];
+        updated[editingIndex] = editingValue;
+        return updated;
+      });
       setEditingIndex(null);
       setEditingValue("");
     }
-  };
+  }, [editingIndex, editingValue]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleAddFeature();
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        handleAddFeature();
+      }
+    },
+    [handleAddFeature]
+  );
 
-  const handleSaveProject = async () => {
+  const handleSaveProject = useCallback(async () => {
     if (
       !projectName ||
       !description ||
@@ -205,17 +287,19 @@ const EditProject = () => {
     }
 
     const techIds = selectedTechs.map((tech) => tech.id);
-    // Get the current project to preserve its display_order
     const { data: currentProject, error: currentProjectError } = await supabase
       .from("projects")
       .select("display_order")
       .eq("id", projectId)
       .single();
-      
+
     if (currentProjectError) {
-      console.error("Failed to get current project order:", currentProjectError);
+      console.error(
+        "Failed to get current project order:",
+        currentProjectError
+      );
     }
-    
+
     const projectData = {
       name: projectName,
       description,
@@ -225,7 +309,6 @@ const EditProject = () => {
       profile_id: profileId,
       techs: techIds,
       features,
-      // Preserve the current display_order when updating
       display_order: currentProject?.display_order,
     };
 
@@ -263,15 +346,69 @@ const EditProject = () => {
     setInfoMessage("Project updated successfully");
     setTimeout(() => setInfoMessage(""), 3000);
     setIsSaving(false);
-  };
+  }, [
+    projectName,
+    description,
+    demoLink,
+    selectedTechs,
+    features,
+    selectedFile,
+    originalThumbnailUrl,
+    profileId,
+    projectId,
+    githubLink,
+  ]);
+
+  // تحسين معالجة تحديث الصورة المصغرة
+  const handleThumbnailChange = useCallback((file) => {
+    if (file) {
+      setSelectedFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setProjectThumbPreview(objectUrl);
+
+      // تنظيف objectUrl عند تغيير الصورة
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+  }, []);
+
+  // تحسين معالجة معاينة الصور
+  const cleanupImagePreview = useCallback(() => {
+    if (projectThumbPreview && projectThumbPreview !== originalThumbnailUrl) {
+      URL.revokeObjectURL(projectThumbPreview);
+    }
+  }, [projectThumbPreview, originalThumbnailUrl]);
+
+  useEffect(() => {
+    return () => cleanupImagePreview();
+  }, [cleanupImagePreview]);
+
+  // تحسين التحقق من صحة النموذج باستخدام useMemo
+  const formValidation = useMemo(
+    () => ({
+      isNameValid: projectName.length > 0,
+      isDescriptionValid: description.length > 0,
+      isDemoLinkValid: demoLink.length > 0,
+      isTechsValid: selectedTechs.length > 0,
+      isFeaturesValid: features.length > 0,
+      isValid: Boolean(
+        projectName &&
+          description &&
+          demoLink &&
+          selectedTechs.length > 0 &&
+          features.length > 0
+      ),
+    }),
+    [projectName, description, demoLink, selectedTechs, features]
+  );
 
   if (isLoading) {
-    return <div className="page-spin"></div>;
+    return <LoadingSpinner />;
   }
 
+  // تحسين عرض القوائم باستخدام المكونات المحسنة
   return (
     <div className="add-project-page">
-      {infoMessage && <div className="toast">{infoMessage}</div>}
+      {infoMessage && <Toast message={infoMessage} />}
       <div className="add-pro-inputs">
         <div>
           <div className="input-field">
@@ -318,34 +455,18 @@ const EditProject = () => {
           <div className="select-technologies">
             <div className="tech-selection">
               <div className="available-techs">
-                <h2>Available Technologies</h2>
-                <div className="tech-list">
-                  {availableTechs.map((tech) => (
-                    <div
-                      key={tech.id}
-                      className="tech-item"
-                      onClick={() => handleSelectTech(tech.id)}
-                    >
-                      <img src={tech.logo_url} alt={tech.name} width="50" />
-                      <h4>{tech.name}</h4>
-                    </div>
-                  ))}
-                </div>
+                <TechList
+                  techs={availableTechs}
+                  onTechClick={handleSelectTech}
+                  title="Available Technologies"
+                />
               </div>
               <div className="selected-techs">
-                <h2>Selected Technologies</h2>
-                <div className="tech-list">
-                  {selectedTechs.map((tech) => (
-                    <div
-                      key={tech.id}
-                      className="tech-item"
-                      onClick={() => handleDeselectTech(tech.id)}
-                    >
-                      <img src={tech.logo_url} alt={tech.name} width="50" />
-                      <h4>{tech.name}</h4>
-                    </div>
-                  ))}
-                </div>
+                <TechList
+                  techs={selectedTechs}
+                  onTechClick={handleDeselectTech}
+                  title="Selected Technologies"
+                />
               </div>
             </div>
           </div>
@@ -354,7 +475,7 @@ const EditProject = () => {
           <div className="thumb">
             {projectThumbPreview ? (
               <>
-                <img src={projectThumbPreview} alt="Thumbnail Preview" />
+                <img src={projectThumbPreview} alt="Thumbnail Preview" loading="lazy"/>
                 <div
                   title="Change Thumbnail"
                   className="chng-img"
@@ -379,10 +500,7 @@ const EditProject = () => {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files[0];
-                if (file) {
-                  setSelectedFile(file);
-                  setProjectThumbPreview(URL.createObjectURL(file));
-                }
+                handleThumbnailChange(file);
               }}
             />
           </div>
@@ -414,25 +532,13 @@ const EditProject = () => {
             </div>
             <div className="features-list">
               {features.map((feature, index) => (
-                <div key={index} className="feature-item">
-                  <span>{feature}</span>
-                  <div>
-                    <button
-                      className="edit-fea"
-                      title="Edit"
-                      onClick={() => handleEditFeature(index)}
-                    >
-                      <i className="fa-solid fa-pen"></i>
-                    </button>
-                    <button
-                      className="delete-fea"
-                      title="Delete"
-                      onClick={() => handleDeleteFeature(index)}
-                    >
-                      <i className="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
+                <FeatureItem
+                  key={index}
+                  feature={feature}
+                  index={index}
+                  onEdit={handleEditFeature}
+                  onDelete={handleDeleteFeature}
+                />
               ))}
             </div>
           </div>
@@ -441,7 +547,7 @@ const EditProject = () => {
       <button
         className="prof-btn"
         onClick={handleSaveProject}
-        disabled={isSaving}
+        disabled={isSaving || !formValidation.isValid}
       >
         {isSaving ? "Saving..." : "Save"}
       </button>
@@ -449,4 +555,4 @@ const EditProject = () => {
   );
 };
 
-export default EditProject;
+export default React.memo(EditProject);
