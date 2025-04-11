@@ -2,7 +2,19 @@ import React, { useRef, useState, useEffect } from "react";
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * AddNewProject Component
+ * Handles the creation of new portfolio projects with:
+ * - Form validation
+ * - Image upload
+ * - Technology stack selection
+ * - Project details input
+ */
 const AddNewProject = () => {
+  /**
+   * Project form state management
+   * Handles form data, validation, and submission
+   */
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [demoLink, setDemoLink] = useState("");
@@ -10,9 +22,9 @@ const AddNewProject = () => {
   const [availableTechs, setAvailableTechs] = useState([]);
   const [originalAvailableTechs, setOriginalAvailableTechs] = useState([]);
   const [selectedTechs, setSelectedTechs] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null); 
+  const [selectedFile, setSelectedFile] = useState(null);
   const [projectThumbPreview, setProjectThumbPreview] = useState("");
-  const [isSaving, setIsSaving] = useState(false); 
+  const [isSaving, setIsSaving] = useState(false);
   const thumbInputRef = useRef(null);
   const [features, setFeatures] = useState([]);
   const [newFeature, setNewFeature] = useState("");
@@ -26,9 +38,13 @@ const AddNewProject = () => {
   useEffect(() => {
     const checkSession = async () => {
       setIsLoading(true);
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
       if (sessionError || !sessionData.session) {
-        console.error("Session check failed! Error:", sessionError || "No session found");
+        console.error(
+          "Session check failed! Error:",
+          sessionError || "No session found"
+        );
         navigate("/admin");
         return;
       }
@@ -46,7 +62,8 @@ const AddNewProject = () => {
       if (profileError) {
         console.error("Failed to fetch profile! Error:", profileError);
       } else {
-        const profile = profileData && profileData.length > 0 ? profileData[0] : null;
+        const profile =
+          profileData && profileData.length > 0 ? profileData[0] : null;
         if (profile) {
           setProfileId(profile.id);
           await fetchTechItems(profile.id);
@@ -119,7 +136,25 @@ const AddNewProject = () => {
     }
   };
 
-  const handleSaveProject = async () => {
+  /**
+   * Image upload handler
+   * @param {Event} e - Upload input change event
+   * Processes and validates image files before upload
+   */
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setProjectThumbPreview(URL.createObjectURL(file));
+    }
+  };
+
+  /**
+   * Form submission handler
+   * Validates form data and creates new project entry
+   * @param {Event} e - Form submission event
+   */
+  const handleSubmit = async (e) => {
     if (
       !projectName ||
       !description ||
@@ -162,14 +197,15 @@ const AddNewProject = () => {
       .from("projects")
       .select("display_order")
       .eq("profile_id", profileId)
-      .order('display_order', { ascending: false })
+      .order("display_order", { ascending: false })
       .limit(1);
-      
+
     // Calculate next display order (max + 1 or 1 if no projects exist)
-    const nextDisplayOrder = (existingProjects && existingProjects.length > 0) 
-      ? (existingProjects[0].display_order || 0) + 1 
-      : 1;
-      
+    const nextDisplayOrder =
+      existingProjects && existingProjects.length > 0
+        ? (existingProjects[0].display_order || 0) + 1
+        : 1;
+
     const techIds = selectedTechs.map((tech) => tech.id);
     const projectData = {
       name: projectName,
@@ -213,7 +249,49 @@ const AddNewProject = () => {
 
     setIsSaving(false);
   };
-  
+
+  /**
+   * Technology stack selector
+   * Manages the multi-select interface for project technologies
+   */
+  const TechSelector = () => {
+    return (
+      <div className="select-technologies">
+        <div className="tech-selection">
+          <div className="available-techs">
+            <h2>Available Technologies</h2>
+            <div className="tech-list">
+              {availableTechs.map((tech) => (
+                <div
+                  key={tech.id}
+                  className="tech-item"
+                  onClick={() => handleSelectTech(tech.id)}
+                >
+                  <img src={tech.logo_url} alt={tech.name} width="50" />
+                  <h4>{tech.name}</h4>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="selected-techs">
+            <h2>Selected Technologies</h2>
+            <div className="tech-list">
+              {selectedTechs.map((tech) => (
+                <div
+                  key={tech.id}
+                  className="tech-item"
+                  onClick={() => handleDeselectTech(tech.id)}
+                >
+                  <img src={tech.logo_url} alt={tech.name} width="50" />
+                  <h4>{tech.name}</h4>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return <div className="page-spin"></div>;
@@ -265,40 +343,7 @@ const AddNewProject = () => {
               id="github-link"
             />
           </div>
-          <div className="select-technologies">
-            <div className="tech-selection">
-              <div className="available-techs">
-                <h2>Available Technologies</h2>
-                <div className="tech-list">
-                  {availableTechs.map((tech) => (
-                    <div
-                      key={tech.id}
-                      className="tech-item"
-                      onClick={() => handleSelectTech(tech.id)}
-                    >
-                      <img src={tech.logo_url} alt={tech.name} width="50" />
-                      <h4>{tech.name}</h4>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="selected-techs">
-                <h2>Selected Technologies</h2>
-                <div className="tech-list">
-                  {selectedTechs.map((tech) => (
-                    <div
-                      key={tech.id}
-                      className="tech-item"
-                      onClick={() => handleDeselectTech(tech.id)}
-                    >
-                      <img src={tech.logo_url} alt={tech.name} width="50" />
-                      <h4>{tech.name}</h4>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <TechSelector />
         </div>
         <div className="sec-pro">
           <div className="thumb">
@@ -327,13 +372,7 @@ const AddNewProject = () => {
               ref={thumbInputRef}
               style={{ display: "none" }}
               accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  setSelectedFile(file);
-                  setProjectThumbPreview(URL.createObjectURL(file)); 
-                }
-              }}
+              onChange={handleImageUpload}
             />
           </div>
           <div className="features">
@@ -388,11 +427,7 @@ const AddNewProject = () => {
           </div>
         </div>
       </div>
-      <button
-        className="prof-btn"
-        onClick={handleSaveProject}
-        disabled={isSaving}
-      >
+      <button className="prof-btn" onClick={handleSubmit} disabled={isSaving}>
         {isSaving ? "Saving..." : "Save"}
       </button>
     </div>

@@ -1,29 +1,31 @@
 import "./styles/App.css";
 import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
-import AdminLogin from "./components/dashboard/AdminLogin";
-import Dashboard from "./components/dashboard/Dashboard";
-import ProtectedRoute from "./components/dashboard/ProtectedRoute";
-import Home from "./components/dashboard/Home";
-import Projects from "./components/dashboard/Projects";
-import Profile from "./components/dashboard/Profile";
-import Portfolio from "./components/portfolio/Portfolio";
-import AddNewProject from "./components/dashboard/AddNewProject";
-import AllProjects from "./components/dashboard/AllProjects";
-import Settings from "./components/dashboard/Settings";
-import ProjectDetail from "./components/dashboard/ProjectDetail";
-import EditProject from "./components/dashboard/EditProject";
 import SplashScreen from "./components/portfolio/SplashScreen";
-import ProjectPage from "./components/portfolio/ProjectPage";
-import ContactRequests from "./components/dashboard/ContactRequests";
-import Analytics from "./components/dashboard/Analytics";
+import ProtectedRoute from "./components/dashboard/ProtectedRoute";
+// Lazy loading components
+const Portfolio = React.lazy(() => import("./components/portfolio/Portfolio"));
+const ProjectPage = React.lazy(() => import("./components/portfolio/ProjectPage"));
+const Dashboard = React.lazy(() => import("./components/dashboard/Dashboard"));
+const AdminLogin = React.lazy(() => import("./components/dashboard/AdminLogin"));
+const Home = React.lazy(() => import("./components/dashboard/Home"));
+const Projects = React.lazy(() => import("./components/dashboard/Projects"));
+const Profile = React.lazy(() => import("./components/dashboard/Profile"));
+const AddNewProject = React.lazy(() => import("./components/dashboard/AddNewProject"));
+const AllProjects = React.lazy(() => import("./components/dashboard/AllProjects"));
+const Settings = React.lazy(() => import("./components/dashboard/Settings"));
+const ProjectDetail = React.lazy(() => import("./components/dashboard/ProjectDetail"));
+const EditProject = React.lazy(() => import("./components/dashboard/EditProject"));
+const ContactRequests = React.lazy(() => import("./components/dashboard/ContactRequests"));
+const Analytics = React.lazy(() => import("./components/dashboard/Analytics"));
+const NotFound = React.lazy(() => import("./components/shared/NotFound"));
 
 
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [portfolioData, setPortfolioData] = useState(null);
-  
+
   // If we're not on the home page (portfolio), don't show the splash screen
   useEffect(() => {
     const path = window.location.pathname;
@@ -31,12 +33,12 @@ function App() {
       setShowSplash(false);
     }
   }, []);
-  
+
   const handleSplashFinish = (data) => {
     setShowSplash(false);
     setPortfolioData(data);
   };
-  
+
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
@@ -46,7 +48,7 @@ function App() {
       {/* Portfolio Pages */}
       <Route path="/" element={<Portfolio initialData={portfolioData} />} />
       <Route path="/project/:projectId" element={<ProjectPage />} />
-      
+
       {/* Dashboard Login Page */}
       <Route path="/admin" element={<AdminLogin />} />
       {/* Dashboard Page with Protected Route */}
@@ -74,7 +76,7 @@ function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
       {/* 404 Page */}
-      <Route path="*" element={<div id="error">Error 404: Not Found</div>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

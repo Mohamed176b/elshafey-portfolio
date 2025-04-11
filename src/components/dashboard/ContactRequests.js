@@ -1,159 +1,224 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabase/supabaseClient';
-import moment from 'moment';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "../../supabase/supabaseClient";
+import moment from "moment";
+import { debounce } from "lodash";
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const ContactRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [cache, setCache] = useState({
+    data: {},
+    timestamp: null,
+  });
+
+  // Check if cache is valid
+  const isCacheValid = useCallback(() => {
+    return cache.timestamp && Date.now() - cache.timestamp < CACHE_DURATION;
+  }, [cache.timestamp]);
+
+  // Debounced filter handler
+  const debouncedFilterChange = useMemo(
+    () =>
+      debounce((value) => {
+        setStatusFilter(value);
+      }, 300),
+    []
+  );
+
+  const fetchContactRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Check cache first
+      const cacheKey = statusFilter;
+      if (isCacheValid() && cache.data[cacheKey]) {
+        setRequests(cache.data[cacheKey]);
+        setLoading(false);
+        return;
+      }
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
+
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      let query = supabase
+        .from("contact_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Update cache
+      setCache((prev) => ({
+        data: {
+          ...prev.data,
+          [cacheKey]: data || [],
+        },
+        timestamp: Date.now(),
+      }));
+
+      setRequests(data || []);
+    } catch (error) {
+      console.error("Error fetching contact requests:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, cache.data, isCacheValid]);
+
+  // Reset cache when it expires
+  useEffect(() => {
+    if (!isCacheValid()) {
+      setCache({ data: {}, timestamp: null });
+    }
+  }, [isCacheValid]);
 
   useEffect(() => {
     fetchContactRequests();
-  }, [statusFilter]);
+  }, [fetchContactRequests]);
 
-  const fetchContactRequests = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch the current session to ensure user is authenticated
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) throw sessionError;
-      
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-      
-      let query = supabase
-        .from('contact_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      // Apply filter if needed
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      setRequests(data || []);
-    } catch (error) {
-      console.error('Error fetching contact requests:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const updateRequestStatus = useCallback(
+    async (id, newStatus) => {
+      try {
+        setLoading(true);
 
-  const updateRequestStatus = async (id, newStatus) => {
-    try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from('contact_requests')
-        .update({ status: newStatus })
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      // Refresh the list
-      await fetchContactRequests();
-      
-      // If viewing a request and it's the one that was updated, refresh the selected request too
-      if (selectedRequest && selectedRequest.id === id) {
-        setSelectedRequest({ ...selectedRequest, status: newStatus });
-      }
-      
-    } catch (error) {
-      console.error('Error updating request status:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const { error } = await supabase
+          .from("contact_requests")
+          .update({ status: newStatus })
+          .eq("id", id);
 
-  const deleteRequest = async (id) => {
-    try {
-      if (!window.confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
-        return;
-      }
-      
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from('contact_requests')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      // Refresh the list
-      await fetchContactRequests();
-      
-      // Close the detail view if the deleted request was selected
-      if (selectedRequest && selectedRequest.id === id) {
-        setSelectedRequest(null);
-      }
-      
-    } catch (error) {
-      console.error('Error deleting request:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (error) throw error;
 
-  const handleViewRequest = (request) => {
-    setSelectedRequest(request);
-    
-    // If the request is new, mark it as read when viewed
-    if (request.status === 'new') {
-      updateRequestStatus(request.id, 'read');
-    }
-  };
+        await fetchContactRequests();
 
-  const closeRequestDetail = () => {
+        if (selectedRequest && selectedRequest.id === id) {
+          setSelectedRequest((prev) => ({ ...prev, status: newStatus }));
+        }
+      } catch (error) {
+        console.error("Error updating request status:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchContactRequests, selectedRequest]
+  );
+
+  const deleteRequest = useCallback(
+    async (id) => {
+      try {
+        if (
+          !window.confirm(
+            "Are you sure you want to delete this request? This action cannot be undone."
+          )
+        ) {
+          return;
+        }
+
+        setLoading(true);
+
+        const { error } = await supabase
+          .from("contact_requests")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+
+        await fetchContactRequests();
+
+        if (selectedRequest && selectedRequest.id === id) {
+          setSelectedRequest(null);
+        }
+      } catch (error) {
+        console.error("Error deleting request:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchContactRequests, selectedRequest]
+  );
+
+  const handleViewRequest = useCallback(
+    (request) => {
+      setSelectedRequest(request);
+
+      if (request.status === "new") {
+        updateRequestStatus(request.id, "read");
+      }
+    },
+    [updateRequestStatus]
+  );
+
+  const closeRequestDetail = useCallback(() => {
     setSelectedRequest(null);
-  };
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'new': return 'var(--palatinate)';
-      case 'read': return 'var(--caribbean-current)';
-      case 'replied': return 'var(--dark-purple)';
-      case 'archived': return 'var(--midnight-green-2)';
-      default: return 'var(--midnight-green-2)';
+  const getStatusColor = useCallback((status) => {
+    switch (status) {
+      case "new":
+        return "var(--palatinate)";
+      case "read":
+        return "var(--caribbean-current)";
+      case "replied":
+        return "var(--dark-purple)";
+      case "archived":
+        return "var(--midnight-green-2)";
+      default:
+        return "var(--midnight-green-2)";
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'new': return 'New';
-      case 'read': return 'Read';
-      case 'replied': return 'Replied';
-      case 'archived': return 'Archived';
-      default: return status;
+  const getStatusLabel = useCallback((status) => {
+    switch (status) {
+      case "new":
+        return "New";
+      case "read":
+        return "Read";
+      case "replied":
+        return "Replied";
+      case "archived":
+        return "Archived";
+      default:
+        return status;
     }
-  };
+  }, []);
 
-  const renderStatusDropdown = (requestId, currentStatus) => {
-    return (
-      <select 
-        value={currentStatus} 
-        onChange={(e) => updateRequestStatus(requestId, e.target.value)}
-        className="status-select"
-      >
-        <option value="new">New</option>
-        <option value="read">Read</option>
-        <option value="replied">Replied</option>
-        <option value="archived">Archived</option>
-      </select>
-    );
-  };
+  const renderStatusDropdown = useCallback(
+    (requestId, currentStatus) => {
+      return (
+        <select
+          value={currentStatus}
+          onChange={(e) => updateRequestStatus(requestId, e.target.value)}
+          className="status-select"
+        >
+          <option value="new">New</option>
+          <option value="read">Read</option>
+          <option value="replied">Replied</option>
+          <option value="archived">Archived</option>
+        </select>
+      );
+    },
+    [updateRequestStatus]
+  );
 
   if (loading && requests.length === 0) {
     return (
@@ -170,9 +235,9 @@ const ContactRequests = () => {
         <h2 className="title">Contact Requests</h2>
         <div className="requests-filter">
           <label>Filter: </label>
-          <select 
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)}
+          <select
+            value={statusFilter}
+            onChange={(e) => debouncedFilterChange(e.target.value)}
             className="filter-select"
           >
             <option value="all">All</option>
@@ -181,7 +246,13 @@ const ContactRequests = () => {
             <option value="replied">Replied</option>
             <option value="archived">Archived</option>
           </select>
-          <button className="refresh-btn" onClick={fetchContactRequests}>
+          <button
+            className="refresh-btn"
+            onClick={() => {
+              setCache({ data: {}, timestamp: null });
+              fetchContactRequests();
+            }}
+          >
             <i className="fa-solid fa-rotate"></i> Refresh
           </button>
         </div>
@@ -195,16 +266,23 @@ const ContactRequests = () => {
       )}
 
       <div className="requests-container">
-        <div className={`requests-list ${selectedRequest ? 'with-details' : ''}`}>
-          {requests.length === 0 ? (
+        <div
+          className={`requests-list ${selectedRequest ? "with-details" : ""}`}
+        >
+          {requests.length === 0 && !loading ? (
             <div className="no-requests">
               <i className="fa-solid fa-inbox"></i>
-              <p>No contact requests {statusFilter !== 'all' ? `with "${getStatusLabel(statusFilter)}" status` : ''}</p>
+              <p>
+                No contact requests{" "}
+                {statusFilter !== "all"
+                  ? `with "${getStatusLabel(statusFilter)}" status`
+                  : ""}
+              </p>
             </div>
           ) : (
             <>
               <div className="requests-count">
-                <p>Total requests: {requests.length}</p>
+                <p>Showing {requests.length} requests</p>
               </div>
               <div className="requests-table">
                 <table>
@@ -218,24 +296,32 @@ const ContactRequests = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.map(request => (
-                      <tr 
-                        key={request.id} 
-                        className={`request-row ${request.status === 'new' ? 'new-request' : ''}`}
+                    {requests.map((request) => (
+                      <tr
+                        key={request.id}
+                        className={`request-row ${
+                          request.status === "new" ? "new-request" : ""
+                        }`}
                         onClick={() => handleViewRequest(request)}
                       >
                         <td>{request.name}</td>
                         <td>{request.email}</td>
-                        <td>{moment(request.created_at).format('DD/MM/YYYY HH:mm')}</td>
                         <td>
-                          <span 
-                            className="status-indicator" 
-                            style={{ backgroundColor: getStatusColor(request.status) }}
+                          {moment(request.created_at).format(
+                            "DD/MM/YYYY HH:mm"
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className="status-indicator"
+                            style={{
+                              backgroundColor: getStatusColor(request.status),
+                            }}
                           ></span>
                           {getStatusLabel(request.status)}
                         </td>
                         <td className="actions-cell">
-                          <button 
+                          <button
                             className="view-btn"
                             title="View Details"
                             onClick={(e) => {
@@ -245,7 +331,7 @@ const ContactRequests = () => {
                           >
                             <i className="fa-solid fa-eye"></i>
                           </button>
-                          <button 
+                          <button
                             className="delete-btn"
                             title="Delete"
                             onClick={(e) => {
@@ -261,6 +347,12 @@ const ContactRequests = () => {
                   </tbody>
                 </table>
               </div>
+              {loading && (
+                <div className="loading-more">
+                  <div className="page-spin"></div>
+                  <p>Loading...</p>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -290,37 +382,44 @@ const ContactRequests = () => {
                 <div className="info-group">
                   <span className="info-label">Submission Date:</span>
                   <span className="info-value">
-                    {moment(selectedRequest.created_at).format('DD/MM/YYYY HH:mm')}
+                    {moment(selectedRequest.created_at).format(
+                      "DD/MM/YYYY HH:mm"
+                    )}
                   </span>
                 </div>
                 <div className="info-group">
                   <span className="info-label">Status:</span>
                   <span className="info-value status-dropdown">
-                    {renderStatusDropdown(selectedRequest.id, selectedRequest.status)}
+                    {renderStatusDropdown(
+                      selectedRequest.id,
+                      selectedRequest.status
+                    )}
                   </span>
                 </div>
               </div>
               <div className="message-content">
                 <h4>Message:</h4>
-                <div className="message-text">
-                  {selectedRequest.message}
-                </div>
+                <div className="message-text">{selectedRequest.message}</div>
               </div>
               <div className="request-actions">
-                <a 
-                  href={`mailto:${selectedRequest.email}?subject=Reply: Contact Request`} 
+                <a
+                  href={`mailto:${selectedRequest.email}?subject=Reply: Contact Request`}
                   className="reply-btn"
-                  onClick={() => updateRequestStatus(selectedRequest.id, 'replied')}
+                  onClick={() =>
+                    updateRequestStatus(selectedRequest.id, "replied")
+                  }
                 >
                   <i className="fa-solid fa-reply"></i> Reply to Message
                 </a>
-                <button 
+                <button
                   className="archive-btn"
-                  onClick={() => updateRequestStatus(selectedRequest.id, 'archived')}
+                  onClick={() =>
+                    updateRequestStatus(selectedRequest.id, "archived")
+                  }
                 >
                   <i className="fa-solid fa-box-archive"></i> Archive
                 </button>
-                <button 
+                <button
                   className="delete-btn"
                   onClick={() => deleteRequest(selectedRequest.id)}
                 >
@@ -335,4 +434,4 @@ const ContactRequests = () => {
   );
 };
 
-export default ContactRequests;
+export default React.memo(ContactRequests);

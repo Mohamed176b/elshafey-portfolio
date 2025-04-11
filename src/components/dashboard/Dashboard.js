@@ -1,11 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "../../supabase/supabaseClient";
 import DashboardAnimationObserver from "./DashboardAnimationObserver";
 import "../../styles/DashboardAnimations.css";
 
-
-
+/**
+ * Main Dashboard Layout
+ * Manages the dashboard's state and layout including:
+ * - User authentication status
+ * - Sidebar visibility
+ * - Route handling
+ * - Animation effects
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,19 +24,20 @@ const Dashboard = () => {
     setActiveNav(location.pathname);
   }, [location.pathname]);
 
-  const handleNavigation = (path) => {
-    setActiveNav(path);
-    navigate(path);
-  };
+  const handleNavigation = useCallback(
+    (path) => {
+      setActiveNav(path);
+      navigate(path);
+    },
+    [navigate]
+  );
 
   const useMediaQuery = (query) => {
     const [matches, setMatches] = useState(window.matchMedia(query).matches);
+
     useEffect(() => {
       const mediaQuery = window.matchMedia(query);
-
-      const handleChange = (event) => {
-        setMatches(event.matches);
-      };
+      const handleChange = (event) => setMatches(event.matches);
 
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
@@ -42,67 +48,67 @@ const Dashboard = () => {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
+  const sidebarClassName = useMemo(() => {
+    return `sidebar ${isMobile ? "sidebar-mob" : ""}`;
+  }, [isMobile]);
+
+  const navItems = useMemo(
+    () => [
+      { path: "/dashboard", icon: "fa-house", label: "HOME" },
+      { path: "/", icon: "fa-address-card", label: "PORTFOLIO" },
+      {
+        path: "/dashboard/projects",
+        icon: "fa-diagram-project",
+        label: "PROJECTS",
+        checkStartsWith: true,
+      },
+      {
+        path: "/dashboard/analytics",
+        icon: "fa-chart-line",
+        label: "ANALYTICS",
+      },
+      { path: "/dashboard/profile", icon: "fa-address-card", label: "PROFILE" },
+      {
+        path: "/dashboard/contact-requests",
+        icon: "fa-envelope",
+        label: "CONTACT REQUESTS",
+      },
+      { path: "/dashboard/settings", icon: "fa-gear", label: "SETTINGS" },
+    ],
+    []
+  );
+
   return (
     <div className="dashboard-page">
       <DashboardAnimationObserver />
-      <div className={`sidebar ${isMobile ? "sidebar-mob" : ""}`}>
+      <div className={sidebarClassName}>
         <div className="header">
-          <img src={`${process.env.PUBLIC_URL}/front-end.png`} alt="logo"></img>
+          <img
+            src={`${process.env.PUBLIC_URL}/front-end.png`}
+            alt="logo"
+            loading="lazy"
+          ></img>
           <h1>Elshafey Dashboard</h1>
         </div>
         <div className="navs">
-          <div
-            className={`nav ${activeNav === "/dashboard" ? "active-nav" : ""}`}
-            onClick={() => handleNavigation("/dashboard")}
-          >
-            <i className="fa-solid fa-house"></i>
-            <h2>Home</h2>
-          </div>
-          <div
-            className={`nav ${
-              activeNav.startsWith("/dashboard/projects") ? "active-nav" : ""
-            }`}
-            onClick={() => handleNavigation("/dashboard/projects")}
-          >
-            <i className="fa-solid fa-diagram-project"></i>
-            <h2>Projects</h2>
-          </div>
-          <div
-            className={`nav ${
-              activeNav === "/dashboard/analytics" ? "active-nav" : ""
-            }`}
-            onClick={() => handleNavigation("/dashboard/analytics")}
-          >
-            <i className="fa-solid fa-chart-line"></i>
-            <h2>Analytics</h2>
-          </div>
-          <div
-            className={`nav ${
-              activeNav === "/dashboard/profile" ? "active-nav" : ""
-            }`}
-            onClick={() => handleNavigation("/dashboard/profile")}
-          >
-            <i className="fa-solid fa-address-card"></i>
-            <h2>Profile</h2>
-          </div>
-          <div
-            className={`nav ${
-              activeNav === "/dashboard/contact-requests" ? "active-nav" : ""
-            }`}
-            onClick={() => handleNavigation("/dashboard/contact-requests")}
-          >
-            <i className="fa-solid fa-envelope"></i>
-            <h2>Contact Requests</h2>
-          </div>
-          <div
-            className={`nav ${
-              activeNav === "/dashboard/settings" ? "active-nav" : ""
-            }`}
-            onClick={() => handleNavigation("/dashboard/settings")}
-          >
-            <i className="fa-solid fa-gear"></i>
-            <h2>Settings</h2>
-          </div>
+          {navItems.map(({ path, icon, label, checkStartsWith }) => (
+            <div
+              key={path}
+              className={`nav ${
+                checkStartsWith
+                  ? activeNav.startsWith(path)
+                    ? "active-nav"
+                    : ""
+                  : activeNav === path
+                  ? "active-nav"
+                  : ""
+              }`}
+              onClick={() => handleNavigation(path)}
+            >
+              <i className={`fa-solid ${icon}`}></i>
+              <h2>{label}</h2>
+            </div>
+          ))}
         </div>
       </div>
       <div className="dash-sel-page" id="dash-sel-page">
@@ -112,4 +118,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default React.memo(Dashboard);

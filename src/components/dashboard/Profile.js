@@ -2,7 +2,20 @@ import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * Profile Component
+ * Manages user profile information and settings in the dashboard
+ * Features:
+ * - Personal information management
+ * - Profile image handling
+ * - Social media links
+ * - Contact information
+ */
 const Profile = () => {
+  /**
+   * Profile state management
+   * Handles user data, form state, and validation
+   */
   // State variables to manage profile data and UI states
   const [name, setName] = useState(""); // Stores the user's name
   const [about, setAbout] = useState(""); // Stores the "About" section text
@@ -97,7 +110,11 @@ const Profile = () => {
     checkSession(); // Initiate session check and profile fetch
   }, [navigate]); // Dependency array includes navigate to re-run if it changes
 
-  // Function to handle profile data updates
+  /**
+   * Profile update handler
+   * Validates and saves profile changes
+   * @param {Event} e - Form submission event
+   */
   const handleUpdate = async () => {
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession();
@@ -147,7 +164,11 @@ const Profile = () => {
     }
   };
 
-  // Function to handle profile image upload
+  /**
+   * Image upload handler
+   * Processes profile image uploads with validation
+   * @param {Event} e - File input change event
+   */
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) {

@@ -24,6 +24,7 @@ jobs:
           REACT_APP_SERVICE_ID: '${{ secrets.REACT_APP_SERVICE_ID }}'
           REACT_APP_TEMPLATE_ID: '${{ secrets.REACT_APP_TEMPLATE_ID }}'
           REACT_APP_EMAILJS_API_KEY: '${{ secrets.REACT_APP_EMAILJS_API_KEY }}'
+          REACT_APP_OPENCAGE_API_KEY: '${{ secrets.REACT_APP_OPENCAGE_API_KEY }}'
       
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0

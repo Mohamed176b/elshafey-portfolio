@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PortfolioFooter from "./PortfolioFooter";
-import AnimationObserver from "../AnimationObserver";
+import AnimationObserver from "./AnimationObserver";
 import { trackHomePageVisit } from "../../utils/analyticsUtils";
 import { supabase } from "../../supabase/supabaseClient";
 import emailjs from "@emailjs/browser";
@@ -15,6 +15,7 @@ const templateID = process.env.REACT_APP_TEMPLATE_ID;
 emailjs.init(emailjsPublicKey);
 
 const Portfolio = ({ initialData }) => {
+  // All state declarations remain the same at the top
   const [profile, setProfile] = useState(initialData?.profile || null);
   const [projects, setProjects] = useState(initialData?.projects || []);
   const [technologies, setTechnologies] = useState(
@@ -23,42 +24,192 @@ const Portfolio = ({ initialData }) => {
   const [profileTechnologies, setProfileTechnologies] = useState(
     initialData?.profileTechnologies || []
   );
-  const [activeTab, setActiveTab] = useState("projects"); // State for active tab
-  const [tabsVisible, setTabsVisible] = useState(true); // State to track tabs visibility
-  const location = useLocation();
-
-  // Form states
+  const [isLoading, setIsLoading] = useState(!initialData);
+  const [activeTab, setActiveTab] = useState("projects");
+  const [tabsVisible, setTabsVisible] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formStatus, setFormStatus] = useState({ type: "", message: "" });
+  const [scrollProgress, setScrollProgress] = useState(0);
 
-  const contactSectionRef = useRef(null); // Reference for the contact section
-  const formRef = useRef(null); // Reference for the contact form
+  // Refs
+  const contactSectionRef = useRef(null);
+  const formRef = useRef(null);
+  const visitTrackedRef = useRef(false);
+
+  // Router hooks
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // All useCallback hooks moved here, before any conditional returns
+  const sendEmail = useCallback(async () => {
+    const templateParams = { name, email, message };
+    return emailjs.send(
+      serviceID,
+      templateID,
+      templateParams,
+      emailjsPublicKey
+    );
+  }, [name, email, message]);
+
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+
+      try {
+        const { error } = await supabase.from("contact_requests").insert({
+          name,
+          email,
+          message,
+          status: "new",
+        });
+
+        if (error) throw error;
+        await sendEmail();
+
+        setName("");
+        setEmail("");
+        setMessage("");
+        setFormStatus({
+          type: "success",
+          message: "Message sent successfully. We will contact you soon.",
+        });
+      } catch (error) {
+        console.error("Error:", error);
+        setFormStatus({
+          type: "error",
+          message: "Failed to send message. Please try again.",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [name, email, message, sendEmail]
+  );
+
+  const navigateToProject = useCallback(
+    (project) => {
+      navigate(`/project/${project.id}`);
+    },
+    [navigate]
+  );
+
+  const getProjectTechs = useCallback(
+    (projectTechs) => {
+      if (!projectTechs) return [];
+      return technologies.filter((tech) => projectTechs.includes(tech.id));
+    },
+    [technologies]
+  );
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    const url = new URL(window.location);
+    url.searchParams.set("tab", tab);
+    window.history.pushState({}, "", url);
+
+    const element = document.getElementById("portfolio-tab-content");
+    window.scrollTo({
+      top: element.offsetTop,
+      behavior: "smooth",
+    });
+  }, []);
+
+  const scrollToContact = useCallback(() => {
+    contactSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const scrollToForm = useCallback(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (contactSectionRef.current) {
+      const contactSectionTop =
+        contactSectionRef.current.getBoundingClientRect().top;
+      const windowHeight = window.innerHeight;
+      setTabsVisible(contactSectionTop >= windowHeight * 0.8);
+    }
+
+    const scrollPosition = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+    const totalScroll = docHeight - windowHeight;
+    setScrollProgress(scrollPosition / totalScroll);
+  }, []);
 
   useEffect(() => {
     document.title = "Elshafey Portfolio";
 
-    // تتبع زيارة الصفحة الرئيسية
-    trackHomePageVisit();
+    const fetchData = async () => {
+      if (!initialData) {
+        setIsLoading(true);
+        try {
+          // Fetch profile
+          const { data: profileData, error: profileError } = await supabase
+            .from("profile")
+            .select("*")
+            .eq("user_id", process.env.REACT_APP_USER_ID)
+            .limit(1);
 
-    // Check URL parameters for tab selection
+          if (profileError) throw profileError;
+          if (!profileData || profileData.length === 0)
+            throw new Error("No profile found");
+
+          const profileResult = profileData[0];
+          setProfile(profileResult);
+
+          // Fetch projects with proper ordering
+          const { data: projectsData, error: projectsError } = await supabase
+            .from("projects")
+            .select("*")
+            .order("display_order", { ascending: true });
+
+          if (projectsError) throw projectsError;
+          setProjects(projectsData || []);
+
+          // Fetch technologies
+          const { data: techData, error: techError } = await supabase
+            .from("available_techs")
+            .select("*");
+
+          if (techError) throw techError;
+          setTechnologies(techData || []);
+
+          // Fetch profile technologies
+          const { data: profileTechData, error: profileTechError } =
+            await supabase.from("tech_items").select("*");
+
+          if (profileTechError) throw profileTechError;
+          setProfileTechnologies(profileTechData || []);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    if (!visitTrackedRef.current) {
+      trackHomePageVisit();
+      visitTrackedRef.current = true;
+    }
+
     const params = new URLSearchParams(location.search);
     const tabParam = params.get("tab");
-    const scrollToParam = params.get("scrollTo");
 
     if (tabParam) {
       setActiveTab(tabParam);
-
-      // Handle contact section or form scrolling if needed
       if (tabParam === "contact") {
         setTimeout(() => scrollToContact(), 500);
       } else if (tabParam === "contact-form") {
         setTimeout(() => scrollToForm(), 500);
-      } else if (scrollToParam === "portfolio-tab-content") {
-        // If we have the specific scroll parameter, scroll to portfolio-tab-content
+      } else {
         setTimeout(() => {
           const element = document.getElementById("portfolio-tab-content");
           if (element) {
@@ -68,178 +219,39 @@ const Portfolio = ({ initialData }) => {
       }
     }
 
-    // Add scroll event listener for tabs visibility control
-    const handleScroll = () => {
-      if (contactSectionRef.current) {
-        const contactSectionTop =
-          contactSectionRef.current.getBoundingClientRect().top;
-        const windowHeight = window.innerHeight;
-
-        // If contact section is entering the viewport (about 80% from the top)
-        if (contactSectionTop < windowHeight * 0.8) {
-          setTabsVisible(false); // Hide tabs
-        } else {
-          setTabsVisible(true); // Show tabs
-        }
-      }
-    };
-
     window.addEventListener("scroll", handleScroll);
-
-    // Clean up event listener on component unmount
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [location]);
+  }, [initialData, location, handleScroll, scrollToContact, scrollToForm]);
 
-  const sendEmail = async () => {
-    try {
-      const templateParams = {
-        name: name,
-        email: email,
-        message: message,
-      };
-
-      const result = await emailjs.send(
-        serviceID,
-        templateID,
-        templateParams,
-        emailjsPublicKey
-      );
-      return result;
-    } catch (error) {
-      console.error("Failed to send email:", error.text);
-      throw error;
-    }
-  };
-
-  // Handle contact form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase.from("contact_requests").insert({
-        name: name,
-        email: email,
-        message: message,
-        status: "new",
-      });
-
-      if (error) throw error;
-
-      // Send email notification
-      await sendEmail();
-
-      // Reset form
-      setName("");
-      setEmail("");
-      setMessage("");
-      setFormStatus({
-        type: "success",
-        message: "Message sent successfully. We will contact you soon.",
-      });
-    } catch (error) {
-      console.error("Error:", error);
-      setFormStatus({
-        type: "error",
-        message: "Failed to send message. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Navigate to project detail page instead of opening overlay
-  const navigateToProject = (project) => {
-    navigate(`/project/${project.id}`);
-  };
-
-  // Filter technologies for a specific project
-  const getProjectTechs = (projectTechs) => {
-    if (!projectTechs) return [];
-
-    try {
-      let techArray;
-
-      // Handle different formats that might come from the database
-      if (typeof projectTechs === "string") {
-        try {
-          techArray = JSON.parse(projectTechs);
-        } catch (e) {
-          // If it's a comma-separated list
-          techArray = projectTechs.split(",").map((id) => id.trim());
-        }
-      } else if (Array.isArray(projectTechs)) {
-        techArray = projectTechs;
-      } else {
-        return [];
-      }
-
-      // Check if we have IDs or full objects
-      if (
-        techArray.length > 0 &&
-        typeof techArray[0] === "object" &&
-        techArray[0].id
-      ) {
-        return techArray; // Already have full tech objects
-      }
-
-      // Filter to get matching tech objects
-      const matchedTechs = technologies.filter((tech) => {
-        return (
-          techArray.includes(tech.id) ||
-          techArray.includes(tech.id.toString()) ||
-          techArray.includes(parseInt(tech.id))
-        );
-      });
-
-      return matchedTechs;
-    } catch (error) {
-      return [];
-    }
-  };
-
-  // Toggle between tabs
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-
-    // Add tab to URL without page reload
-    const url = new URL(window.location);
-    url.searchParams.set("tab", tab);
-    window.history.pushState({}, "", url);
-
-    // Scroll to top of content area when changing tabs
-    const element = document.getElementById("portfolio-tab-content");
-    window.scrollTo({
-      top: element.offsetTop,
-      behavior: "smooth",
-    });
-  };
-
-  // Function to scroll to contact section
-  const scrollToContact = () => {
-    contactSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Function to scroll to contact form
-  const scrollToForm = () => {
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  if (isLoading) {
+    return (
+      <div className="portfolio-loading">
+        <div className="loader">
+          <div className="loader-bar"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="portfolio-page">
-      {/* مكون لتفعيل الأنيميشن على العناصر عند التمرير */}
+      {/* Animation Observer for animations */}
       <AnimationObserver />
 
-      {/* خلفية النقاط المتحركة */}
+      {/* Moving dots background */}
       <div className="animated-dots-bg"></div>
       {/* Header Section with Profile Info */}
+      <div
+        className="project-scroll-progress"
+        style={{ width: `${scrollProgress * 100}%` }}
+      ></div>
       <header className="portfolio-header">
         <div className="profile-container">
           {profile?.user_img && (
             <div className="profile-image">
-              <img src={profile.user_img} alt={profile.name} />
+              <img src={profile.user_img} alt={profile.name} loading="lazy" />
             </div>
           )}
           <div className="profile-info">
@@ -248,7 +260,7 @@ const Portfolio = ({ initialData }) => {
               {profile?.about ||
                 "Frontend Developer specializing in creating modern web applications"}
             </p>
-            {/* Admin login button removed from public view for better security */}
+            {/* Admin login button */}
           </div>
         </div>
       </header>
@@ -306,7 +318,11 @@ const Portfolio = ({ initialData }) => {
                   >
                     {project.thumbnailUrl ? (
                       <div className="project-thumbnail">
-                        <img src={project.thumbnailUrl} alt={project.name} />
+                        <img
+                          src={project.thumbnailUrl}
+                          alt={project.name}
+                          loading="lazy"
+                        />
                       </div>
                     ) : (
                       <div className="project-thumbnail project-thumbnail-placeholder">
@@ -329,7 +345,11 @@ const Portfolio = ({ initialData }) => {
                             .map((tech) => (
                               <div key={tech.id} className="tech-tag">
                                 {tech.logo_url && (
-                                  <img src={tech.logo_url} alt={tech.name} />
+                                  <img
+                                    src={tech.logo_url}
+                                    alt={tech.name}
+                                    loading="lazy"
+                                  />
                                 )}
                                 <span>{tech.name}</span>
                               </div>
@@ -361,7 +381,11 @@ const Portfolio = ({ initialData }) => {
                 {profileTechnologies.map((tech) => (
                   <div key={tech.id} className="technology-item">
                     {tech.tech_logo_url && (
-                      <img src={tech.tech_logo_url} alt={tech.tech_name} />
+                      <img
+                        src={tech.tech_logo_url}
+                        alt={tech.tech_name}
+                        loading="lazy"
+                      />
                     )}
                     <span>{tech.tech_name}</span>
                   </div>
@@ -482,6 +506,7 @@ const Portfolio = ({ initialData }) => {
                     <img
                       src={profile.user_img}
                       alt={profile?.name || "Developer"}
+                      loading="lazy"
                     />
                   ) : (
                     <div className="contact-avatar-placeholder">

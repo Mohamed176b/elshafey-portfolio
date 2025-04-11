@@ -53,8 +53,7 @@ elshafey-portfolio/
 ├── src/                     # Main source code
 │   ├── components/          # Various React components
 │   │   ├── dashboard/       # Dashboard components
-│   │   ├── portfolio/       # Portfolio interface components
-│   │   └── ...
+│   │   └── portfolio/       # Portfolio interface components
 │   ├── styles/              # CSS files and project formatting
 │   ├── supabase/            # Supabase configuration and setup
 │   ├── utils/               # Helper functions and tools

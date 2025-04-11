@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const PortfolioFooter = ({ profile, scrollToSection }) => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const PortfolioFooter = ({ profile, scrollToSection }) => {
       }
     } else {
       // If on another page, navigate to home with projects hash and scroll to portfolio-tab-content
-      // We'll add a special parameter to indicate we should scroll to that element after navigation
+      // Add a special parameter to indicate we should scroll to that element after navigation
       navigate('/?tab=projects&scrollTo=portfolio-tab-content');
     }
   };
@@ -55,7 +55,7 @@ const PortfolioFooter = ({ profile, scrollToSection }) => {
       }
     } else {
       // If on another page, navigate to home with technologies hash and scroll to portfolio-tab-content
-      // We'll add a special parameter to indicate we should scroll to that element after navigation
+      // Add a special parameter to indicate we should scroll to that element after navigation
       navigate('/?tab=technologies&scrollTo=portfolio-tab-content');
     }
   };
@@ -134,24 +134,24 @@ const PortfolioFooter = ({ profile, scrollToSection }) => {
           <h3>Quick Links</h3>
           <ul>
             <li>
-              <a href="#" onClick={navigateToProjects}>
+              <Link to={"#"} onClick={navigateToProjects}>
                 <i className="fa-solid fa-code"></i> Projects
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" onClick={navigateToTechnologies}>
+              <Link to={"#"} onClick={navigateToTechnologies}>
                 <i className="fa-solid fa-laptop-code"></i> Skills & Technologies
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" onClick={navigateToContact}>
+              <Link to={"#"} onClick={navigateToContact}>
                 <i className="fa-solid fa-address-card"></i> Contact Info
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" onClick={navigateToForm}>
+              <Link to={"#"} onClick={navigateToForm}>
                 <i className="fa-solid fa-paper-plane"></i> Contact Form
-              </a>
+              </Link>
             </li>
             {profile?.cv_url && (
               <li>
@@ -199,4 +199,4 @@ const PortfolioFooter = ({ profile, scrollToSection }) => {
   );
 };
 
-export default PortfolioFooter;
+export default React.memo(PortfolioFooter);

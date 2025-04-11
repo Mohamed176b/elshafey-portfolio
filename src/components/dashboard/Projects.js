@@ -9,6 +9,15 @@ import {
 import { supabase } from "../../supabase/supabaseClient";
 import { getUserSession } from "../../utils/authUtils";
 
+/**
+ * Main Projects Component
+ * Features:
+ * - Project listing with filters
+ * - Add/Edit/Delete project actions
+ * - Search functionality
+ * - Technology-based filtering
+ * - Pagination support
+ */
 const Projects = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -114,9 +123,9 @@ const Projects = () => {
       console.log("Project deleted successfully from database");
 
       const { error: deleteVisitError } = await supabase
-      .from("page_visits")
-      .delete()
-      .eq("project_id", projectId);
+        .from("page_visits")
+        .delete()
+        .eq("project_id", projectId);
 
       if (deleteVisitError) {
         console.error("Error deleting project visits:", deleteVisitError);
@@ -197,9 +206,7 @@ const Projects = () => {
         {!isAddNewProject && !isAProject && !isEditProject && (
           <button
             className="prof-btn project-add-btn"
-            onClick={() =>
-              navigate("/dashboard/projects/add-new-project")
-            }
+            onClick={() => navigate("/dashboard/projects/add-new-project")}
           >
             <i className="fa-solid fa-square-plus"></i>
             <span>Add New Project</span>

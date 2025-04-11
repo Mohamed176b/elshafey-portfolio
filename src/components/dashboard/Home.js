@@ -3,7 +3,7 @@ import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getUserSession } from "../../utils/authUtils";
 import { fetchVisitStats } from "../../utils/analyticsUtils";
-import moment from 'moment';
+import moment from "moment";
 
 const Home = () => {
   const [name, setName] = useState(""); // Stores the user's name
@@ -17,7 +17,7 @@ const Home = () => {
   const [dashboardConfig, setDashboardConfig] = useState({
     maxLength: null,
     numberOfProjects: null,
-    numberOfMessages: null
+    numberOfMessages: null,
   });
   // Get user from sessionStorage instead of location state
   const user = getUserSession();
@@ -28,14 +28,18 @@ const Home = () => {
       setIsLoading(true);
       try {
         // Obtener sesión de usuario
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+
         if (sessionError || !sessionData.session) {
-          console.error("Session check failed! Error:", sessionError || "No session found");
+          console.error(
+            "Session check failed! Error:",
+            sessionError || "No session found"
+          );
           navigate("/admin");
           return;
         }
-        
+
         const user = sessionData.session.user;
         await fetchProfileData(user);
       } catch (error) {
@@ -45,7 +49,7 @@ const Home = () => {
         setIsLoading(false);
       }
     };
-    
+
     // Cargar datos del perfil
     const fetchProfileData = async (user) => {
       try {
@@ -54,81 +58,84 @@ const Home = () => {
           .select("*")
           .eq("user_id", user.id)
           .limit(1);
-          
+
         if (profileError) {
           console.error("Failed to fetch profile! Error:", profileError);
           return;
         }
-        
-        const profile = profileData && profileData.length > 0 ? profileData[0] : null;
-        
+
+        const profile =
+          profileData && profileData.length > 0 ? profileData[0] : null;
+
         if (profile) {
           // Actualizar datos básicos del perfil
           setName(profile.name || "");
           setUserImg(profile.user_img || "");
-          
+
           // Establecer profileId (esto desencadenará el segundo useEffect)
           setProfileId(profile.id);
         } else {
-          console.log("No profile found for user. Initializing with empty values.");
+          console.log(
+            "No profile found for user. Initializing with empty values."
+          );
           setUserImg("");
         }
       } catch (error) {
         console.error("Error in fetchProfileData:", error);
       }
     };
-    
+
     initializeSession();
   }, [navigate]); // Solo navigate como dependencia, profileId se maneja en otro useEffect
-  
+
   // useEffect que se ejecuta cuando cambia profileId para cargar datos dependientes
   useEffect(() => {
     // Solo ejecutar si hay un profileId válido
     if (!profileId) return;
-    
+
     const loadDependentData = async () => {
       console.log("Loading data for profileId:", profileId);
-      
+
       // 1. Primero cargar la configuración - ESTO ES CRUCIAL
       await loadDashboardConfig();
-      
+
       // 2. Luego cargar proyectos, mensajes y análisis
       await Promise.all([
         loadProjects(),
         loadRecentMessages(),
-        loadAnalyticsData()
+        loadAnalyticsData(),
       ]);
     };
-    
+
     // Cargar configuración del dashboard
     const loadDashboardConfig = async () => {
       try {
-        console.log('Fetching dashboard config for profile:', profileId);
+        console.log("Fetching dashboard config for profile:", profileId);
         const { data, error } = await supabase
-          .from('dashboard_config')
-          .select('*')
-          .eq('profile_id', profileId);
-          
+          .from("dashboard_config")
+          .select("*")
+          .eq("profile_id", profileId);
+
         if (error) {
           console.error("Error fetching dashboard config:", error);
           // Establecer valores predeterminados en caso de error
           setDashboardConfig({
             maxLength: 70,
             numberOfProjects: 3,
-            numberOfMessages: 3
+            numberOfMessages: 3,
           });
           return;
         }
-        
+
         if (data && data.length > 0) {
           // Configuración encontrada
           const config = data[0];
-          console.log('Config loaded from DB:', config);
-          
+          console.log("Config loaded from DB:", config);
+
           setDashboardConfig({
             maxLength: config.max_length || 70,
             numberOfProjects: config.number_of_projects || 3,
-            numberOfMessages: config.number_of_messages || 3
+            numberOfMessages: config.number_of_messages || 3,
           });
           console.log("Dashboard config loaded successfully");
         } else {
@@ -137,7 +144,7 @@ const Home = () => {
           setDashboardConfig({
             maxLength: 70,
             numberOfProjects: 3,
-            numberOfMessages: 3
+            numberOfMessages: 3,
           });
         }
       } catch (error) {
@@ -146,11 +153,11 @@ const Home = () => {
         setDashboardConfig({
           maxLength: 70,
           numberOfProjects: 3,
-          numberOfMessages: 3
+          numberOfMessages: 3,
         });
       }
     };
-    
+
     // Cargar proyectos
     const loadProjects = async () => {
       try {
@@ -158,45 +165,45 @@ const Home = () => {
           .from("projects")
           .select("*")
           .eq("profile_id", profileId)
-          .order('display_order', { ascending: true });
-          
+          .order("display_order", { ascending: true });
+
         if (projectsError) {
           console.error("Failure to fetch projects:", projectsError);
           return;
         }
-        
+
         setProjects(projectsData || []);
         console.log("Projects loaded:", projectsData?.length || 0);
       } catch (error) {
         console.error("Error in loadProjects:", error);
       }
     };
-    
+
     // Cargar mensajes recientes
     const loadRecentMessages = async () => {
       try {
         // Obtener el límite de mensajes de la configuración (ya cargada anteriormente)
         const messageLimit = dashboardConfig.numberOfMessages || 3;
         console.log("Loading messages with limit:", messageLimit);
-        
+
         const { data, error } = await supabase
           .from("contact_requests")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(messageLimit);
-          
+
         if (error) {
           console.error("Failed to fetch recent messages:", error);
           return;
         }
-        
+
         setRecentMessages(data || []);
         console.log("Messages loaded:", data?.length || 0);
       } catch (error) {
         console.error("Error in loadRecentMessages:", error);
       }
     };
-    
+
     // Cargar datos de análisis
     const loadAnalyticsData = async () => {
       try {
@@ -207,9 +214,13 @@ const Home = () => {
         console.error("Failed to fetch analytics data:", error);
       }
     };
-    
+
     loadDependentData();
-  }, [profileId]); // Solo se ejecuta cuando cambia profileId
+  }, [
+    profileId,
+    dashboardConfig.numberOfMessages,
+    dashboardConfig.numberOfProjects,
+  ]); // Added dashboardConfig dependencies
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -262,25 +273,31 @@ const Home = () => {
           </div>
           <div className="card">
             {projects.length > 0 ? (
-              projects.slice(0, dashboardConfig.numberOfProjects || 3).map((project, index) => (
-                <div
-                  className="project-sub"
-                  key={index}
-                  onClick={() =>
-                    navigate(`/dashboard/projects/${project.id}`)
-                  }
-                >
-                  {/* <div className="pro-imgs"><img src={project.thumbnailUrl} alt={project.name}></img></div> */}
-                  <div>
-                    <h3 className="section2-title">{project.name}</h3>
-                    <p className="sub-para">
-                      {project.description.length > (dashboardConfig.maxLength || 70)
-                        ? `${project.description.slice(0, dashboardConfig.maxLength || 70)}...`
-                        : project.description}
-                    </p>
+              projects
+                .slice(0, dashboardConfig.numberOfProjects || 3)
+                .map((project, index) => (
+                  <div
+                    className="project-sub"
+                    key={index}
+                    onClick={() =>
+                      navigate(`/dashboard/projects/${project.id}`)
+                    }
+                  >
+                    {/* <div className="pro-imgs"><img src={project.thumbnailUrl} alt={project.name}></img></div> */}
+                    <div>
+                      <h3 className="section2-title">{project.name}</h3>
+                      <p className="sub-para">
+                        {project.description.length >
+                        (dashboardConfig.maxLength || 70)
+                          ? `${project.description.slice(
+                              0,
+                              dashboardConfig.maxLength || 70
+                            )}...`
+                          : project.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
             ) : (
               <div className="no-items-message">
                 <p>No projects available</p>
@@ -288,13 +305,13 @@ const Home = () => {
             )}
           </div>
           <button
-              className="home-btn spefBtn view-all-projects"
-              onClick={() => handleNavigation("/dashboard/projects")}
-            >
-              See All Projects
-            </button>
+            className="home-btn spefBtn view-all-projects"
+            onClick={() => handleNavigation("/dashboard/projects")}
+          >
+            See All Projects
+          </button>
         </div>
-        
+
         <div className="recent-messages section">
           <div>
             <h3 className="section-title">Recent Messages</h3>
@@ -305,7 +322,9 @@ const Home = () => {
                 <div
                   className="message-sub"
                   key={index}
-                  onClick={() => handleNavigation("/dashboard/contact-requests")}
+                  onClick={() =>
+                    handleNavigation("/dashboard/contact-requests")
+                  }
                 >
                   <div className="message-header">
                     <div className="message-sender">
@@ -313,15 +332,20 @@ const Home = () => {
                       <span className="message-email">{message.email}</span>
                     </div>
                     <div className="message-date">
-                      {moment(message.created_at).format('DD/MM/YYYY')}
+                      {moment(message.created_at).format("DD/MM/YYYY")}
                     </div>
                   </div>
                   <div className="message-status">
-                    <span className={`status-badge status-${message.status}`}>{message.status}</span>
+                    <span className={`status-badge status-${message.status}`}>
+                      {message.status}
+                    </span>
                   </div>
                   <p className="sub-para">
                     {message.message.length > (dashboardConfig.maxLength || 70)
-                      ? `${message.message.slice(0, dashboardConfig.maxLength || 70)}...`
+                      ? `${message.message.slice(
+                          0,
+                          dashboardConfig.maxLength || 70
+                        )}...`
                       : message.message}
                   </p>
                 </div>
@@ -339,7 +363,7 @@ const Home = () => {
             View All Messages
           </button>
         </div>
-        
+
         <div className="analytics-summary section grid-span-2">
           <div className="welcome-sub">
             <div>
@@ -348,7 +372,7 @@ const Home = () => {
             </div>
             <img src="/analytics-icon.png" alt="Analytics" />
           </div>
-          
+
           <div className="welcome-desc">
             {analyticsData ? (
               <div className="analytics-stats-wrapper">
@@ -358,7 +382,9 @@ const Home = () => {
                       <i className="fa-solid fa-chart-line"></i>
                     </div>
                     <div className="stats-content">
-                      <h3 className="section3-title">{analyticsData.totalVisits}</h3>
+                      <h3 className="section3-title">
+                        {analyticsData.totalVisits}
+                      </h3>
                       <p className="sub-para">Total Visits</p>
                     </div>
                   </div>
@@ -367,7 +393,9 @@ const Home = () => {
                       <i className="fa-solid fa-calendar-day"></i>
                     </div>
                     <div className="stats-content">
-                      <h3 className="section3-title">{analyticsData.todayHomeVisits}</h3>
+                      <h3 className="section3-title">
+                        {analyticsData.todayHomeVisits}
+                      </h3>
                       <p className="sub-para">Today</p>
                     </div>
                   </div>
@@ -378,7 +406,9 @@ const Home = () => {
                       <i className="fa-solid fa-calendar-week"></i>
                     </div>
                     <div className="stats-content">
-                      <h3 className="section3-title">{analyticsData.weekHomeVisits}</h3>
+                      <h3 className="section3-title">
+                        {analyticsData.weekHomeVisits}
+                      </h3>
                       <p className="sub-para">This Week</p>
                     </div>
                   </div>
@@ -387,7 +417,9 @@ const Home = () => {
                       <i className="fa-solid fa-calendar-minus"></i>
                     </div>
                     <div className="stats-content">
-                      <h3 className="section3-title">{analyticsData.monthHomeVisits}</h3>
+                      <h3 className="section3-title">
+                        {analyticsData.monthHomeVisits}
+                      </h3>
                       <p className="sub-para">This Month</p>
                     </div>
                   </div>

@@ -1,14 +1,26 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import { memo, useCallback, useMemo } from "react";
 import { isAuthenticated } from "../../utils/authUtils";
 
-const ProtectedRoute = ({ children }) => {
-  // No longer need to get user from location state
-  if (!isAuthenticated()) {
-    console.warn("Unauthorized access attempt - Redirecting to login page");
-    return <Navigate to="/admin" replace />; // Redirect to login page if user is not authenticated
-  }
+const ProtectedRoute = memo(({ children }) => {
+  const isAuth = useMemo(() => isAuthenticated(), []);
 
-  return children; // Render protected content if user is authenticated
-};
+  const handleUnauthorized = useCallback(() => {
+    console.warn("Unauthorized access attempt - Redirecting to login page");
+    return <Navigate to="/admin" replace />;
+  }, []);
+
+  try {
+    if (!isAuth) {
+      return handleUnauthorized();
+    }
+    return children;
+  } catch (error) {
+    console.error("Error in ProtectedRoute:", error);
+    return handleUnauthorized();
+  }
+});
+
+ProtectedRoute.displayName = "ProtectedRoute";
 
 export default ProtectedRoute;

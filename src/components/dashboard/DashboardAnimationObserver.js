@@ -1,106 +1,126 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
- * Componente que añade animaciones a los elementos del dashboard
- * Similar al AnimationObserver pero específico para el dashboard
+ * DashboardAnimationObserver Component
+ * Adds animation effects to dashboard elements using Intersection Observer.
+ * This is a performance-optimized version that handles animations for multiple
+ * dashboard elements including projects, cards, and sidebar components.
  */
 const DashboardAnimationObserver = () => {
   useEffect(() => {
-    // Activa las animaciones en elementos específicos del dashboard
+    // Set to track elements that have already been animated
+    const animatedElements = new Set();
+
+    // Callback function for the Intersection Observer
+    // Handles adding animation classes when elements become visible
     const observerCallback = (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-visible');
-          
-          // Para elementos que tienen hijos que necesitan animación secuencial
-          if (entry.target.classList.contains('has-sequential-children')) {
-            const children = entry.target.querySelectorAll('.sequential-item');
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !animatedElements.has(entry.target)) {
+          const element = entry.target;
+          element.classList.add("animate-visible");
+          animatedElements.add(element);
+
+          if (element.classList.contains("has-sequential-children")) {
+            const children = element.querySelectorAll(".sequential-item");
             children.forEach((child, index) => {
-              child.style.animationDelay = `${0.1 * index}s`;
-              child.classList.add('animate-visible');
+              child.style.setProperty("animation-delay", `${0.1 * index}s`);
+              child.classList.add("animate-visible");
+              animatedElements.add(child);
             });
           }
         }
       });
     };
 
-    // Configuración del observer
+    // Initialize Intersection Observer with default options
     const observer = new IntersectionObserver(observerCallback, {
       root: null,
-      rootMargin: '0px',
-      threshold: 0.1 // Umbral menor para activar antes las animaciones
+      rootMargin: "0px",
+      threshold: 0.1,
     });
 
-    // Selecciona todos los elementos del dashboard que queremos animar
-    const animateElements = [
-      '.project', // Proyectos en la lista
-      '.dashboard-card', // Tarjetas del dashboard
-      '.order-instructions', // Instrucciones de orden
-      '.add-project-page .input-field', // Campos del formulario
-      '.form-submit-button', // Botones de envío
-      '.projects-container', // Contenedor de proyectos
-      '.page-title', // Títulos de página
-      '.dashboard-page-header', // Encabezados de página
-      '.tech-selection', // Selección de tecnologías
-      '.thumb' // Miniaturas
-    ];
+    // Combine all target selectors for performance optimization
+    const selectors = [
+      ".project",
+      ".dashboard-card",
+      ".order-instructions",
+      ".add-project-page .input-field",
+      ".form-submit-button",
+      ".projects-container",
+      ".page-title",
+      ".dashboard-page-header",
+      ".tech-selection",
+      ".thumb",
+      ".sidebar-link",
+      ".sidebar",
+      ".dashboard-page",
+      ".main-content",
+    ].join(",");
 
-    // Aplica las clases de animación a todos los elementos seleccionados
-    animateElements.forEach(selector => {
-      document.querySelectorAll(selector).forEach((element, index) => {
-        // Agrega clases de animación según el tipo de elemento
-        if (element.classList.contains('project')) {
-          element.classList.add('animate-on-scroll', 'animate-fade-up');
-          element.style.animationDelay = `${0.05 * index}s`;
-        } else if (element.classList.contains('dashboard-card')) {
-          element.classList.add('animate-on-scroll', 'animate-fade-in');
-          element.style.animationDelay = `${0.1 * index}s`;
-        } else if (element.classList.contains('order-instructions')) {
-          element.classList.add('animate-on-scroll', 'animate-glow');
-        } else {
-          element.classList.add('animate-on-scroll');
-        }
-        
-        // Observa el elemento para activar la animación
-        observer.observe(element);
-      });
-    });
+    // Query all elements at once for better performance
+    const elements = document.querySelectorAll(selectors);
 
-    // Solo aplicamos efectos de hover a los elementos de la barra lateral
-    document.querySelectorAll('.sidebar-link').forEach((element, index) => {
-      element.classList.add('animate-no-hide');
-      element.classList.add('animate-visible');
-    });
+    // Apply animation classes based on element type
+    elements.forEach((element, index) => {
+      const classList = element.classList;
 
-    // Nos aseguramos de que los elementos críticos sean siempre visibles
-    
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar) {
-      sidebar.classList.add('animate-no-hide');
-      sidebar.classList.add('animate-visible');
-    }
-    
-    const dashboardPage = document.querySelector('.dashboard-page');
-    if (dashboardPage) {
-      dashboardPage.classList.add('animate-no-hide');
-      dashboardPage.classList.add('animate-visible');
-    }
-    
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.add('animate-no-hide');
-      mainContent.classList.add('animate-visible');
-    }
-
-    // Limpieza al desmontar
-    return () => {
-      if (observer) {
-        observer.disconnect();
+      // Projects get fade-up animation with staggered delay
+      if (classList.contains("project")) {
+        classList.add("animate-on-scroll", "animate-fade-up");
+        element.style.setProperty("animation-delay", `${0.05 * index}s`);
       }
+      // Dashboard cards get fade-in animation with staggered delay
+      else if (classList.contains("dashboard-card")) {
+        classList.add("animate-on-scroll", "animate-fade-in");
+        element.style.setProperty("animation-delay", `${0.1 * index}s`);
+      }
+      // Order instructions get glow animation
+      else if (classList.contains("order-instructions")) {
+        classList.add("animate-on-scroll", "animate-glow");
+      }
+      // Persistent elements that should remain visible
+      else if (
+        classList.contains("sidebar-link") ||
+        classList.contains("sidebar") ||
+        classList.contains("dashboard-page") ||
+        classList.contains("main-content")
+      ) {
+        classList.add("animate-no-hide", "animate-visible");
+      }
+      // Default animation for other elements
+      else {
+        classList.add("animate-on-scroll");
+      }
+
+      // Only observe elements that should hide/show on scroll
+      if (!classList.contains("animate-no-hide")) {
+        observer.observe(element);
+      }
+
+      animatedElements.add(element);
+    });
+
+    // Cleanup function to remove animations and disconnect observer
+    return () => {
+      observer.disconnect();
+      animatedElements.forEach((element) => {
+        if (element) {
+          element.classList.remove(
+            "animate-visible",
+            "animate-on-scroll",
+            "animate-fade-up",
+            "animate-fade-in",
+            "animate-glow",
+            "animate-no-hide"
+          );
+          element.style.removeProperty("animation-delay");
+        }
+      });
+      animatedElements.clear();
     };
   }, []);
 
-  return null; // No renderiza ningún elemento visual
+  return null;
 };
 
 export default DashboardAnimationObserver;

@@ -1,6 +1,3 @@
-/* تأثيرات حركية لبورتفوليو البشمهندس الشافعي */
-
-/* تأثيرات الظهور والدخول */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -63,7 +60,6 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* تأثيرات التفاعل */
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -103,7 +99,6 @@
   100% { border-color: rgba(255, 255, 255, 0.1); }
 }
 
-/* تأثيرات للصفحة الرئيسية */
 .portfolio-header {
   animation: fadeIn 0.8s ease-out forwards, slideInUp 0.8s ease-out forwards;
   position: relative;
@@ -194,7 +189,6 @@
   transition: all 0.3s ease;
 }
 
-/* تأثيرات للفوتر */
 .portfolio-footer {
   animation: fadeIn 1s ease-out;
   transition: backdrop-filter 0.5s ease;
@@ -238,7 +232,6 @@
   animation: fadeIn 1s ease-out, borderGlow 4s infinite;
 }
 
-/* تأثيرات لصفحة المشروع */
 .project-hero {
   animation: fadeIn 1.2s ease-out;
   transition: all 0.5s ease;
@@ -300,14 +293,12 @@
   animation: pulse 1.5s infinite;
 }
 
-/* تأثيرات تظهر عناصر الصفحة مع التمرير */
 .animate-on-scroll {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
 
-/* تأثير النقاط المتحركة في الخلفية */
 @keyframes dotMovement {
   0% { 
     background-position: 0 0, 20px 20px;
@@ -334,14 +325,13 @@
   100% { transform: rotate(360deg); }
 }
 
-/* إضافة النقاط المتحركة للخلفية */
 .animated-dots-bg {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* لتجنب تأثيرها على الضغط على العناصر خلفها */
+  width: 200%;
+  height: 200%;
+  pointer-events: none; 
   z-index: 0;
   overflow: hidden;
 }
@@ -355,9 +345,9 @@
   height: 100%;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 2.5px, transparent 2.5px),
                     radial-gradient(circle, rgba(255, 255, 255, 0.15) 2px, transparent 2px);
-  background-size: 60px 60px, 50px 50px;
+  background-size: 200px 200px, 190px 190px;
   background-position: 0 0, 20px 20px;
-  animation: dotMovement 20s infinite linear, dotRotation 120s infinite linear;
+  animation: dotMovement 20s infinite linear, dotRotation 200s infinite linear;
 }
 
 .animate-on-scroll.visible {
@@ -365,7 +355,6 @@
   transform: translateY(0);
 }
 
-/* تأثيرات إضافية للعناصر التفاعلية */
 .btn-glass, .form-input {
   transition: all 0.3s ease;
 }
@@ -374,7 +363,6 @@
   animation: pulse 1.5s infinite, borderGlow 4s infinite;
 }
 
-/* تأثير لعناصر Loading */
 .page-spin {
   animation: spinGlow 2s infinite linear;
 }
