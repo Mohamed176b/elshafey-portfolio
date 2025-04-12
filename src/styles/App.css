@@ -843,6 +843,7 @@ select:-webkit-autofill:focus {
   font-size: 22px;
   margin: 0px;
   border-bottom: 2px solid var(--space-cadet);
+  width: 210px;
 }
 .all-projects-page .project p {
   width: 210px;
