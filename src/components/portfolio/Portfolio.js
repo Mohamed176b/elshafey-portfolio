@@ -5,6 +5,11 @@ import AnimationObserver from "./AnimationObserver";
 import { trackHomePageVisit } from "../../utils/analyticsUtils";
 import { supabase } from "../../supabase/supabaseClient";
 import emailjs from "@emailjs/browser";
+import {
+  checkRateLimit,
+  updateRateLimit,
+  formatTimeRemaining,
+} from "../../utils/rateLimitUtils";
 
 // Initialize EmailJS with public key
 const emailjsPublicKey = process.env.REACT_APP_EMAILJS_API_KEY;
@@ -33,11 +38,14 @@ const Portfolio = ({ initialData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formStatus, setFormStatus] = useState({ type: "", message: "" });
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [showRateLimit, setShowRateLimit] = useState(false);
 
   // Refs
   const contactSectionRef = useRef(null);
   const formRef = useRef(null);
   const visitTrackedRef = useRef(false);
+  const timerRef = useRef(null);
 
   // Router hooks
   const location = useLocation();
@@ -54,9 +62,49 @@ const Portfolio = ({ initialData }) => {
     );
   }, [name, email, message]);
 
+  const updateTimer = useCallback(() => {
+    const { canSubmit, waitTime } = checkRateLimit();
+    if (!canSubmit && showRateLimit) {
+      setTimeRemaining(waitTime);
+      setFormStatus({
+        type: "warning",
+        message: `Please wait ${formatTimeRemaining(
+          waitTime
+        )} before sending another message.`,
+      });
+    } else if (canSubmit) {
+      setTimeRemaining(0);
+      setShowRateLimit(false);
+      setFormStatus({ type: "", message: "" });
+    }
+  }, [showRateLimit]);
+
+  useEffect(() => {
+    if (timeRemaining > 0 && showRateLimit) {
+      timerRef.current = setInterval(() => {
+        updateTimer();
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    }
+  }, [timeRemaining, updateTimer, showRateLimit]);
+
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
+      const { canSubmit, waitTime } = checkRateLimit();
+
+      if (!canSubmit) {
+        setShowRateLimit(true);
+        setTimeRemaining(waitTime);
+        setFormStatus({
+          type: "warning",
+          message: `Please wait ${formatTimeRemaining(
+            waitTime
+          )} before sending another message.`,
+        });
+        return;
+      }
+
       setIsSubmitting(true);
 
       try {
@@ -69,6 +117,10 @@ const Portfolio = ({ initialData }) => {
 
         if (error) throw error;
         await sendEmail();
+
+        updateRateLimit(); // Update rate limit after successful submission
+        setShowRateLimit(true);
+        updateTimer(); // Start the timer
 
         setName("");
         setEmail("");
@@ -87,7 +139,7 @@ const Portfolio = ({ initialData }) => {
         setIsSubmitting(false);
       }
     },
-    [name, email, message, sendEmail]
+    [name, email, message, sendEmail, updateTimer]
   );
 
   const navigateToProject = useCallback(
@@ -570,6 +622,11 @@ const Portfolio = ({ initialData }) => {
           {formStatus.message && (
             <div className={`form-status ${formStatus.type}`}>
               <p>{formStatus.message}</p>
+              {timeRemaining > 0 && showRateLimit && (
+                <div className="countdown-timer">
+                  Time remaining: {formatTimeRemaining(timeRemaining)}
+                </div>
+              )}
             </div>
           )}
 
@@ -619,11 +676,15 @@ const Portfolio = ({ initialData }) => {
             <button
               type="submit"
               className="submit-btn"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (timeRemaining > 0 && showRateLimit)}
             >
               {isSubmitting ? (
                 <span>
                   <i className="fa-solid fa-spinner fa-spin"></i> Sending...
+                </span>
+              ) : timeRemaining > 0 && showRateLimit ? (
+                <span>
+                  <i className="fa-solid fa-clock"></i> Please wait...
                 </span>
               ) : (
                 <span>

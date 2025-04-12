@@ -179,40 +179,55 @@ export const trackProjectPageVisit = async (projectId, projectName) => {
 // Updates the total visit count in the 'visit_stats' table
 const updateTotalVisits = async () => {
   try {
-    // Check for existing visit statistics
-    const { data, error } = await supabase
+    // Get existing stats with explicit column selection
+    const { data: existingStats, error: fetchError } = await supabase
       .from("visit_stats")
-      .select("*")
-      .eq("id", 1) // Fetch record with ID 1
-      .single(); // Expect a single record
+      .select("id, total_visits")
+      .eq("id", 1)
+      .maybeSingle();
 
-    // Handle errors, ignoring 'not found' (PGRST116) case
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 = not found
-      // console.error('Error fetching visit stats:', error);
-      return;
-    }
+    const currentTimestamp = new Date().toISOString();
 
-    if (!data) {
-      // If no stats exist, create a new record with initial count
-      await supabase.from("visit_stats").insert({
-        id: 1, // Fixed ID for the stats record
-        total_visits: 1, // Initialize with 1 visit
-        last_updated: new Date().toISOString(), // Current timestamp
-      });
+    if (!existingStats) {
+      // If no record exists, try to create initial record
+      const initialData = {
+        id: 1,
+        total_visits: 1,
+        last_updated: currentTimestamp,
+      };
+
+      const { error: insertError } = await supabase
+        .from("visit_stats")
+        .upsert(initialData)
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("Error creating initial visit stats:", insertError);
+      }
     } else {
-      // Update existing stats by incrementing the visit count
-      await supabase
+      // Update existing record with explicit type checking
+      const newVisitCount =
+        typeof existingStats.total_visits === "number"
+          ? existingStats.total_visits + 1
+          : 1;
+
+      const { error: updateError } = await supabase
         .from("visit_stats")
         .update({
-          total_visits: data.total_visits + 1, // Increment total visits
-          last_updated: new Date().toISOString(), // Update timestamp
+          total_visits: newVisitCount,
+          last_updated: currentTimestamp,
         })
-        .eq("id", 1); // Match record with ID 1
+        .eq("id", 1)
+        .select("id")
+        .single();
+
+      if (updateError) {
+        console.error("Error updating visit stats:", updateError);
+      }
     }
   } catch (error) {
-    // Log any unexpected errors in the function
-    // console.error('Error in updateTotalVisits:', error);
+    console.error("Error in updateTotalVisits:", error);
   }
 };
 

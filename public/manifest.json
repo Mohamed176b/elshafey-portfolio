@@ -1,6 +1,7 @@
 {
   "short_name": "ELSHAFEY",
   "name": "Elshafey Portfolio",
+  "description": "Crafting seamless web experiences – Turning ideas into interactive realities!",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,6 +11,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#1b3a4bff",
+  "background_color": "#1b3a4bff"
 }

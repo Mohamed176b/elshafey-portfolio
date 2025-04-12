@@ -3556,6 +3556,12 @@ input:checked + .slider:before {
   color: #e74c3c;
 }
 
+.form-status.warning {
+  background-color: rgba(255, 152, 0, 0.15);
+  border: 1px solid #ff9800;
+  color: #ff9800;
+}
+
 .contact-form {
   display: flex;
   flex-direction: column;
@@ -3628,12 +3634,27 @@ input:checked + .slider:before {
 }
 
 .submit-btn:disabled {
-  opacity: 0.7;
+  background-color: rgba(77, 25, 77, 0.3);
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.submit-btn:disabled:hover {
+  background-color: rgba(77, 25, 77, 0.3);
 }
 
 .submit-btn i {
   font-size: 1.2rem;
+}
+
+.countdown-timer {
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
