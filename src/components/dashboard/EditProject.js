@@ -8,14 +8,12 @@ import React, {
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
 
-// المكونات المحسنة
 const Toast = React.memo(({ message }) => (
   <div className="toast">{message}</div>
 ));
 
 const LoadingSpinner = React.memo(() => <div className="page-spin"></div>);
 
-// مكون TechItem المحسن للقائمة
 const TechItem = React.memo(({ tech, onClick, children }) => (
   <div key={tech.id} className="tech-item" onClick={() => onClick(tech.id)}>
     <img src={tech.logo_url} alt={tech.name} width="50" loading="lazy" />
@@ -24,7 +22,6 @@ const TechItem = React.memo(({ tech, onClick, children }) => (
   </div>
 ));
 
-// مكون TechList المحسن مع التقسيم المنطقي
 const TechList = React.memo(({ techs, onTechClick, title }) => {
   const [showMore, setShowMore] = useState(false);
 
@@ -52,7 +49,6 @@ const TechList = React.memo(({ techs, onTechClick, title }) => {
   );
 });
 
-// مكون FeatureItem المحسن
 const FeatureItem = React.memo(({ feature, index, onEdit, onDelete }) => (
   <div className="feature-item">
     <span>{feature}</span>
@@ -252,7 +248,6 @@ const EditProject = () => {
     if (
       !projectName ||
       !description ||
-      !demoLink ||
       selectedTechs.length === 0 ||
       features.length === 0
     ) {
@@ -359,19 +354,16 @@ const EditProject = () => {
     githubLink,
   ]);
 
-  // تحسين معالجة تحديث الصورة المصغرة
   const handleThumbnailChange = useCallback((file) => {
     if (file) {
       setSelectedFile(file);
       const objectUrl = URL.createObjectURL(file);
       setProjectThumbPreview(objectUrl);
 
-      // تنظيف objectUrl عند تغيير الصورة
       return () => URL.revokeObjectURL(objectUrl);
     }
   }, []);
 
-  // تحسين معالجة معاينة الصور
   const cleanupImagePreview = useCallback(() => {
     if (projectThumbPreview && projectThumbPreview !== originalThumbnailUrl) {
       URL.revokeObjectURL(projectThumbPreview);
@@ -382,30 +374,26 @@ const EditProject = () => {
     return () => cleanupImagePreview();
   }, [cleanupImagePreview]);
 
-  // تحسين التحقق من صحة النموذج باستخدام useMemo
   const formValidation = useMemo(
     () => ({
       isNameValid: projectName.length > 0,
       isDescriptionValid: description.length > 0,
-      isDemoLinkValid: demoLink.length > 0,
       isTechsValid: selectedTechs.length > 0,
       isFeaturesValid: features.length > 0,
       isValid: Boolean(
         projectName &&
           description &&
-          demoLink &&
           selectedTechs.length > 0 &&
           features.length > 0
       ),
     }),
-    [projectName, description, demoLink, selectedTechs, features]
+    [projectName, description, selectedTechs, features]
   );
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  // تحسين عرض القوائم باستخدام المكونات المحسنة
   return (
     <div className="add-project-page">
       {infoMessage && <Toast message={infoMessage} />}
@@ -475,7 +463,11 @@ const EditProject = () => {
           <div className="thumb">
             {projectThumbPreview ? (
               <>
-                <img src={projectThumbPreview} alt="Thumbnail Preview" loading="lazy"/>
+                <img
+                  src={projectThumbPreview}
+                  alt="Thumbnail Preview"
+                  loading="lazy"
+                />
                 <div
                   title="Change Thumbnail"
                   className="chng-img"

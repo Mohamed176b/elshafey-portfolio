@@ -1,24 +1,48 @@
 import { Navigate } from "react-router-dom";
-import { memo, useCallback, useMemo } from "react";
-import { isAuthenticated } from "../../utils/authUtils";
+import { memo, useCallback, useEffect, useState } from "react";
+import {
+  isAuthenticated,
+  validateSessionWithSupabase,
+} from "../../utils/authUtils";
 
 const ProtectedRoute = memo(({ children }) => {
-  const isAuth = useMemo(() => isAuthenticated(), []);
+  const [isValidating, setIsValidating] = useState(true);
+  const [isValid, setIsValid] = useState(false);
 
-  const handleUnauthorized = useCallback(() => {
-    console.warn("Unauthorized access attempt - Redirecting to login page");
-    return <Navigate to="/admin" replace />;
+  const validateSession = useCallback(async () => {
+    try {
+      // First check local session
+      if (!isAuthenticated()) {
+        setIsValid(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Then validate against Supabase
+      const isValidSession = await validateSessionWithSupabase();
+      setIsValid(isValidSession);
+    } catch (error) {
+      console.error("Error in session validation:", error);
+      setIsValid(false);
+    } finally {
+      setIsValidating(false);
+    }
   }, []);
 
-  try {
-    if (!isAuth) {
-      return handleUnauthorized();
-    }
-    return children;
-  } catch (error) {
-    console.error("Error in ProtectedRoute:", error);
-    return handleUnauthorized();
+  useEffect(() => {
+    validateSession();
+  }, [validateSession]);
+
+  if (isValidating) {
+    return <div className="page-spin"></div>;
   }
+
+  if (!isValid) {
+    console.warn("Unauthorized access attempt - Redirecting to login page");
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
 });
 
 ProtectedRoute.displayName = "ProtectedRoute";

@@ -2,12 +2,11 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useMemo,
   Suspense,
   lazy,
 } from "react";
 import { supabase } from "../../supabase/supabaseClient";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 // Lazy load components
 const TechList = lazy(() => import("./project-detail/TechList"));

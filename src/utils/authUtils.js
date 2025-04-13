@@ -1,5 +1,6 @@
+import { supabase } from "../supabase/supabaseClient";
 // Auth utilities for handling user session
-const SESSION_USER_KEY = 'elshafey_portfolio_user';
+const SESSION_USER_KEY = "elshafey_portfolio_user";
 
 // Store user in sessionStorage
 export const setUserSession = (user) => {
@@ -8,7 +9,7 @@ export const setUserSession = (user) => {
     sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
     return true;
   } catch (error) {
-    console.error('Error storing user session:', error);
+    console.error("Error storing user session:", error);
     return false;
   }
 };
@@ -19,7 +20,7 @@ export const getUserSession = () => {
     const userSession = sessionStorage.getItem(SESSION_USER_KEY);
     return userSession ? JSON.parse(userSession) : null;
   } catch (error) {
-    console.error('Error getting user session:', error);
+    console.error("Error getting user session:", error);
     return null;
   }
 };
@@ -30,7 +31,7 @@ export const clearUserSession = () => {
     sessionStorage.removeItem(SESSION_USER_KEY);
     return true;
   } catch (error) {
-    console.error('Error clearing user session:', error);
+    console.error("Error clearing user session:", error);
     return false;
   }
 };
@@ -38,4 +39,32 @@ export const clearUserSession = () => {
 // Check if user is authenticated
 export const isAuthenticated = () => {
   return !!getUserSession();
+};
+
+// Validate session against Supabase
+export const validateSessionWithSupabase = async () => {
+  try {
+    const localSession = getUserSession();
+    if (!localSession) return false;
+
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Error validating session:", error);
+      return false;
+    }
+
+    if (!session) {
+      clearUserSession();
+      return false;
+    }
+
+    // Validate that local session matches Supabase session
+    return session.user.id === localSession.id;
+  } catch (error) {
+    console.error("Session validation error:", error);
+    return false;
+  }
 };

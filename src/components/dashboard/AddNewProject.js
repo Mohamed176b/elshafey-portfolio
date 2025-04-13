@@ -190,7 +190,7 @@ const AddNewProject = () => {
     async (e) => {
       const file = e.target.files[0];
       if (file) {
-        cleanupImage(); // تنظيف URL القديم قبل إنشاء واحد جديد
+        cleanupImage();
         setSelectedFile(file);
         setProjectThumbPreview(URL.createObjectURL(file));
       }
@@ -208,7 +208,6 @@ const AddNewProject = () => {
       if (
         !projectName ||
         !description ||
-        !demoLink ||
         !selectedFile ||
         selectedTechs.length === 0 ||
         features.length === 0
@@ -305,7 +304,6 @@ const AddNewProject = () => {
     ]
   );
 
-  // Instead of storing JSX in a variable, create a memoized component
   const TechSelectorComponent = useMemo(() => {
     return function TechSelector() {
       return (
@@ -347,7 +345,6 @@ const AddNewProject = () => {
     };
   }, [availableTechs, selectedTechs, handleSelectTech, handleDeselectTech]);
 
-  // تحسين أداء النموذج باستخدام useMemo للقيم المحسوبة
   const formData = useMemo(
     () => ({
       features,
@@ -379,7 +376,6 @@ const AddNewProject = () => {
     ]
   );
 
-  // تحسين أداء معالجة حالة التحميل
   const renderLoading = useCallback(() => {
     return <div className="page-spin"></div>;
   }, []);
@@ -418,7 +414,6 @@ const AddNewProject = () => {
             <input
               className="add-pro-input"
               placeholder="Demo Link"
-              required
               type="text"
               value={demoLink}
               onChange={(e) => setDemoLink(e.target.value)}

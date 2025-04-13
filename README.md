@@ -115,6 +115,8 @@ elshafey-portfolio/
 │   │   ├── index.css                   # Root styles
 │   │   ├── Login.css                   # Authentication styles
 │   │   └── NotFound.css               # 404 page styling
+|   |── tempcss/                        # cleaned css selectors
+|   |   └──....                        
 │   ├── supabase/                        # Supabase configuration
 │   │   └── supabaseClient.js          # Supabase client setup
 │   ├── utils/                           # Utility functions
@@ -124,7 +126,6 @@ elshafey-portfolio/
 │   ├── App.js                          # Main application component
 │   ├── App.test.js                     # Application tests
 │   ├── index.js                        # Entry point
-│   ├── logo.svg                        # Application logo
 │   ├── reportWebVitals.js             # Performance monitoring
 │   └── setupTests.js                   # Test configuration
 ├── public/                             # Static assets
@@ -215,7 +216,7 @@ Production-ready code:
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Mohamed176b/elshafey-portfolio
    cd elshafey-portfolio
    ```
 

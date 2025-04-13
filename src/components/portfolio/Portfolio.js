@@ -51,7 +51,6 @@ const Portfolio = ({ initialData }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // All useCallback hooks moved here, before any conditional returns
   const sendEmail = useCallback(async () => {
     const templateParams = { name, email, message };
     return emailjs.send(
@@ -139,7 +138,7 @@ const Portfolio = ({ initialData }) => {
         setIsSubmitting(false);
       }
     },
-    [name, email, message, sendEmail, updateTimer]
+    [name, email, message, sendEmail]
   );
 
   const navigateToProject = useCallback(
@@ -197,46 +196,54 @@ const Portfolio = ({ initialData }) => {
     document.title = "Elshafey Portfolio";
 
     const fetchData = async () => {
+      // Only fetch data if no initialData was provided from SplashScreen
+      // This acts as a fallback in case SplashScreen failed to load data
       if (!initialData) {
         setIsLoading(true);
         try {
-          // Fetch profile
-          const { data: profileData, error: profileError } = await supabase
-            .from("profile")
-            .select("*")
-            .eq("user_id", process.env.REACT_APP_USER_ID)
-            .limit(1);
+          // Fetch all required data from Supabase
+          const [
+            profileResponse,
+            projectsResponse,
+            techResponse,
+            profileTechResponse,
+          ] = await Promise.all([
+            supabase
+              .from("profile")
+              .select("*")
+              .eq("user_id", process.env.REACT_APP_USER_ID)
+              .limit(1),
+            supabase
+              .from("projects")
+              .select("*")
+              .order("display_order", { ascending: true }),
+            supabase.from("available_techs").select("*"),
+            supabase.from("tech_items").select("*"),
+          ]);
 
-          if (profileError) throw profileError;
-          if (!profileData || profileData.length === 0)
+          // Handle profile data
+          if (profileResponse.error) throw profileResponse.error;
+          if (!profileResponse.data?.length)
             throw new Error("No profile found");
+          setProfile(profileResponse.data[0]);
 
-          const profileResult = profileData[0];
-          setProfile(profileResult);
+          if (projectsResponse.error) throw projectsResponse.error;
+          if (!projectsResponse.data?.length)
+            throw new Error("No projects found");
+          setProjects(projectsResponse.data || []);
 
-          // Fetch projects with proper ordering
-          const { data: projectsData, error: projectsError } = await supabase
-            .from("projects")
-            .select("*")
-            .order("display_order", { ascending: true });
 
-          if (projectsError) throw projectsError;
-          setProjects(projectsData || []);
+          if (techResponse.error) throw techResponse.error;
+          if (!techResponse.data?.length)
+            throw new Error("No Technologies found");
+          setTechnologies(techResponse.data || []);
 
-          // Fetch technologies
-          const { data: techData, error: techError } = await supabase
-            .from("available_techs")
-            .select("*");
 
-          if (techError) throw techError;
-          setTechnologies(techData || []);
+          if (profileTechResponse.error) throw profileTechResponse.error;
+          if (!profileTechResponse.data?.length)
+            throw new Error("No Profile Technologies found");
+          setProfileTechnologies(profileTechResponse.data || []);
 
-          // Fetch profile technologies
-          const { data: profileTechData, error: profileTechError } =
-            await supabase.from("tech_items").select("*");
-
-          if (profileTechError) throw profileTechError;
-          setProfileTechnologies(profileTechData || []);
         } catch (error) {
           console.error("Error fetching data:", error);
         } finally {

@@ -201,7 +201,6 @@ const Projects = () => {
     setShowMenu((prev) => !prev);
   }, []);
 
-  // تخزين مؤقت للعناصر المشروطة المتكررة
   const backButton = useMemo(() => {
     if (isAddNewProject || isAProject || isEditProject) {
       return (
@@ -240,7 +239,6 @@ const Projects = () => {
     return null;
   }, [isAddNewProject, isAProject, isEditProject, navigateToAddProject]);
 
-  // تخزين مؤقت لقائمة الإجراءات
   const actionMenu = useMemo(() => {
     if (!showMenu) return null;
     return (

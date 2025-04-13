@@ -1,0 +1,27 @@
+# Dynamic CSS Classes Used in JavaScript Files
+
+## Animation Classes
+'animate-visible', 'animate-on-scroll', 'animate-fade-up', 'animate-fade-in', 'animate-glow', 'animate-no-hide', 'animate-zoom-in', 'visible', 'sequential-item', 'has-sequential-children'
+
+## State Classes
+'active', 'active-nav', 'dragging', 'visible', 'fade-out', 'tabs-hidden'
+
+## Layout Classes
+'sidebar-mob', 'with-details', 'dash-sel-page-loading', 'new-request'
+
+## Status Classes
+'status-new', 'status-read', 'status-replied', 'status-archived'
+
+## Project Classes
+'project-card', 'tech-card', 'feature-card', 'contact-card', 'contact-form', 'project-description-box'
+
+## Toast/Message Classes
+'toast', 'form-status', 'success', 'warning', 'error'
+
+## Dashboard Classes
+'dashboard-card', 'order-instructions', 'add-project-page', 'input-field', 'form-submit-button', 'projects-container', 'page-title', 'dashboard-page-header', 'tech-selection', 'thumb', 'sidebar-link', 'sidebar', 'dashboard-page', 'main-content'
+
+## Portfolio Classes
+'splash-screen', 'portfolio-tabs', 'portfolio-tab', 'project-card', 'tech-card', 'feature-card', 'contact-card', 'contact-form', 'portfolio-footer'
+
+## These classes should be preserved in CSS minification and should not be removed by tools like PurgeCSS

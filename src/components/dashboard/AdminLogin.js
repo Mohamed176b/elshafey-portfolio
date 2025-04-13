@@ -7,7 +7,10 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, supabase } from "../../supabase/supabaseClient";
-import { setUserSession } from "../../utils/authUtils";
+import {
+  setUserSession,
+  validateSessionWithSupabase,
+} from "../../utils/authUtils";
 import "../../styles/Login.css";
 
 /**
@@ -30,16 +33,30 @@ const AdminLogin = () => {
     document.title = "Dashboard Login";
   }, []);
 
+  // Add session check on component mount
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const isValidSession = await validateSessionWithSupabase();
+        if (isValidSession) {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
+
   /**
    * Form submission handler
    * Validates credentials and creates user session
-   * @param {Event} e - Form submission event
    */
   const handleLogin = useCallback(async () => {
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
 
-    // Validate inputs before attempting to sign in
     if (!validateInputs(email, password)) {
       return;
     }
@@ -48,21 +65,32 @@ const AdminLogin = () => {
     const result = await signIn(email, password);
 
     if (result.error) {
-      alert(result.error);
-    } else {
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        const sessionSaved = setUserSession(result.data.user);
-        if (sessionSaved) {
-          navigate("/dashboard");
-        } else {
-          setInfoMessage("Failed to save session!");
-        }
-      } else {
-        setInfoMessage("Failed to save session!");
-      }
+      setInfoMessage(result.error.message);
+      setTimeout(() => setInfoMessage(""), 3000);
+      return;
     }
-    setInfoMessage("");
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Failed to get user data");
+      }
+
+      const sessionSaved = setUserSession(user);
+      if (!sessionSaved) {
+        throw new Error("Failed to save session");
+      }
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Login error:", error);
+      setInfoMessage(error.message);
+      setTimeout(() => setInfoMessage(""), 3000);
+    }
   }, [navigate]);
 
   // Input validation function

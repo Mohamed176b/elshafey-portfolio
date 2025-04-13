@@ -11,7 +11,6 @@ import {
 const COLORS = ["#00C49F", "#FFBB28", "#FF8042"];
 
 const DeviceStats = memo(({ userAgentData }) => {
-  // البيانات تأتي جاهزة الآن من analyticsUtils، فلا نحتاج إلى معالجتها مرة أخرى
   const totalVisits = userAgentData.reduce((sum, item) => sum + item.visits, 0);
 
   const formatTooltip = (value, name) => {

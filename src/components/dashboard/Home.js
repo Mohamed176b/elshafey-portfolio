@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { fetchVisitStats } from "../../utils/analyticsUtils";
 import moment from "moment";
 
-// مكون فرعي للترحيب
 const WelcomeSection = React.memo(
   ({ name, userImg, projectsCount, handleNavigation }) => (
     <div className="welcome section">
@@ -13,7 +12,7 @@ const WelcomeSection = React.memo(
           <h3 className="section-title home-sec-t">Welcome</h3>
           <p className="sub-para">{name.split(" ")[1]}</p>
         </div>
-        <img src="/welcome.png" alt="Welcome" loading="lazy"/>
+        <img src="/welcome.png" alt="Welcome" loading="lazy" />
       </div>
       <div className="welcome-desc">
         <div className="profile-img">
@@ -40,7 +39,6 @@ const WelcomeSection = React.memo(
   )
 );
 
-// مكون فرعي للمشاريع
 const ProjectsSection = React.memo(
   ({ projects, maxLength, handleNavigation }) => (
     <div className="latest-projects section">
@@ -83,7 +81,6 @@ const ProjectsSection = React.memo(
   )
 );
 
-// مكون فرعي للرسائل
 const MessagesSection = React.memo(
   ({ messages, maxLength, handleNavigation }) => (
     <div className="recent-messages section">
@@ -135,7 +132,6 @@ const MessagesSection = React.memo(
   )
 );
 
-// مكون فرعي للتحليلات
 const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
   <div className="analytics-summary section grid-span-2">
     <div className="welcome-sub">
@@ -143,7 +139,7 @@ const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
         <h3 className="section-title home-sec-t">Analytics Summary</h3>
         <p className="sub-para">Portfolio Performance</p>
       </div>
-      <img src="/analytics-icon.png" alt="Analytics" loading="lazy"/>
+      <img src="/analytics-icon.png" alt="Analytics" loading="lazy" />
     </div>
 
     <div className="welcome-desc">
@@ -196,7 +192,6 @@ const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
             </div>
           </div>
 
-          {/* إضافة معلومات حول الأجهزة والمتصفحات */}
           <div className="analytics-stats-row device-browser-stats">
             {analyticsData.userAgentData &&
               analyticsData.userAgentData.length > 0 && (
@@ -228,7 +223,6 @@ const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
               )}
           </div>
 
-          {/* إضافة معلومات حول المشاريع الأكثر زيارة */}
           {analyticsData.projectVisits &&
             analyticsData.projectVisits.length > 0 && (
               <div className="analytics-stats-row top-project">
@@ -246,7 +240,6 @@ const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
               </div>
             )}
 
-          {/* إضافة معلومات حول مصادر الزيارات */}
           {analyticsData.referrerData &&
             analyticsData.referrerData.length > 0 && (
               <div className="analytics-stats-row traffic-source">
@@ -280,10 +273,10 @@ const AnalyticsSection = React.memo(({ analyticsData, handleNavigation }) => (
 ));
 
 const Home = () => {
-  const [name, setName] = useState(""); // Stores the user's name
-  const [userImg, setUserImg] = useState(""); // Stores the profile image URL
-  const [isLoading, setIsLoading] = useState(true); // Indicates if initial data is being fetched
-  const navigate = useNavigate(); // Hook for programmatic navigation
+  const [name, setName] = useState("");
+  const [userImg, setUserImg] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const [profileId, setProfileId] = useState(null);
   const [projects, setProjects] = useState([]);
   const [recentMessages, setRecentMessages] = useState([]);
@@ -404,25 +397,6 @@ const Home = () => {
     }
   }, []);
 
-  // Memoize loadDependentData
-  const loadDependentData = useCallback(async () => {
-    if (!profileId) return;
-
-    console.log("Loading data for profileId:", profileId);
-    await loadDashboardConfig();
-    await Promise.all([
-      loadProjects(),
-      loadRecentMessages(),
-      loadAnalyticsData(),
-    ]);
-  }, [
-    profileId,
-    loadDashboardConfig,
-    loadProjects,
-    loadRecentMessages,
-    loadAnalyticsData,
-  ]);
-
   // Memoize fetchProfileData
   const fetchProfileData = useCallback(async (user) => {
     try {
@@ -455,38 +429,11 @@ const Home = () => {
     }
   }, []);
 
-  // Memoize initializeSession
-  const initializeSession = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.getSession();
-
-      if (sessionError || !sessionData.session) {
-        console.error(
-          "Session check failed! Error:",
-          sessionError || "No session found"
-        );
-        navigate("/admin");
-        return;
-      }
-
-      const user = sessionData.session.user;
-      await fetchProfileData(user);
-    } catch (error) {
-      console.error("Error initializing session:", error);
-      navigate("/admin");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate, fetchProfileData]);
-
   // Memoize filtered projects
   const filteredProjects = useMemo(() => {
     return projects.slice(0, dashboardConfig.numberOfProjects || 3);
   }, [projects, dashboardConfig.numberOfProjects]);
 
-  // تحسين استخدام useMemo للبيانات المعروضة
   const welcomeData = useMemo(
     () => ({
       name,
@@ -512,7 +459,6 @@ const Home = () => {
     [recentMessages, dashboardConfig.maxLength]
   );
 
-  // تحسين التحميل المتزامن للبيانات
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -526,7 +472,6 @@ const Home = () => {
         const user = sessionResult.data.session.user;
         await fetchProfileData(user);
 
-        // تحميل متزامن للبيانات
         if (profileId) {
           await Promise.all([
             loadDashboardConfig(),

@@ -6,23 +6,57 @@ const GECODER_OPENCAGE_API_KEY = process.env.REACT_APP_OPENCAGE_API_KEY;
 // Get location info using OpenCage Geocoder
 const getLocationInfo = async () => {
   try {
-    // Check if location tracking is enabled
+    // Check if location tracking is enabled in config
     const { data: config } = await supabase
       .from("dashboard_config")
       .select("track_location")
       .single();
 
     if (!config || !config.track_location) {
+      console.log("Location tracking is disabled in config");
       return { country: "Unknown", city: "Unknown" };
     }
 
-    // First get user's coordinates
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+      console.log("Geolocation API is not supported in this environment");
+      return {
+        country: "Unknown",
+        city: "Unknown",
+      };
+    }
+
+    // Check if we're using HTTPS (required for geolocation in modern browsers)
+    if (window.location.protocol !== "https:") {
+      console.log("Geolocation requires HTTPS");
+      return { country: "Unknown", city: "Unknown" };
+    }
+
+    // Get user's coordinates with timeout and better error handling
     const position = await new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation is not supported"));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(resolve, reject);
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        (error) => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              reject(new Error("User denied geolocation permission"));
+              break;
+            case error.POSITION_UNAVAILABLE:
+              reject(new Error("Location information unavailable"));
+              break;
+            case error.TIMEOUT:
+              reject(new Error("Location request timed out"));
+              break;
+            default:
+              reject(error);
+          }
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000, 
+          maximumAge: 300000, 
+        }
+      );
     });
 
     const { latitude, longitude } = position.coords;
@@ -185,7 +219,10 @@ const updateTotalVisits = async () => {
       .select("id, total_visits")
       .eq("id", 1)
       .maybeSingle();
-
+    if (fetchError) {
+      console.error("Error fetching existing visit stats:", fetchError);
+      return;
+    }
     const currentTimestamp = new Date().toISOString();
 
     if (!existingStats) {

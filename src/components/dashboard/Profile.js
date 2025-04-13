@@ -8,7 +8,6 @@ import React, {
 import { supabase } from "../../supabase/supabaseClient";
 import { useNavigate } from "react-router-dom";
 
-// مكون TechItem المحسن
 const TechItem = React.memo(({ tech, onDelete }) => (
   <div className="tech-item">
     {tech.tech_logo_url && (
@@ -19,7 +18,6 @@ const TechItem = React.memo(({ tech, onDelete }) => (
   </div>
 ));
 
-// مكون ContactFields المحسن
 const ContactFields = React.memo(
   ({ email, github, linkedin, facebook, onChange }) => (
     <div className="contacts">
@@ -66,7 +64,6 @@ const ContactFields = React.memo(
   )
 );
 
-// مكون ProfileImage المحسن
 const ProfileImage = React.memo(
   ({ userImg, isUploading, onImageClick, fileInputRef, onFileChange }) => (
     <div className="user-img">
@@ -93,7 +90,6 @@ const ProfileImage = React.memo(
   )
 );
 
-// مكون CvUpload المحسن
 const CvUpload = React.memo(
   ({ cvUrl, isCvUploading, onButtonClick, cvFileInputRef, onFileChange }) => (
     <div className="input-field">
@@ -544,7 +540,6 @@ const Profile = () => {
     }
   };
 
-  // تحسين معالج تغيير حقول الاتصال
   const handleContactChange = useCallback((field, value) => {
     switch (field) {
       case "email":

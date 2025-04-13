@@ -34,8 +34,8 @@ const AnimationObserver = () => {
     // Create an IntersectionObserver instance with optimized options
     const observer = new IntersectionObserver(observerCallback, {
       root: null,
-      rootMargin: "50px", // Increased margin for better pre-loading
-      threshold: [0, 0.25], // Multiple thresholds for smoother transitions
+      rootMargin: "50px", 
+      threshold: [0, 0.25],
     });
 
     // Get all elements once to avoid multiple DOM queries

@@ -284,15 +284,6 @@
   animation: pulse 1.5s infinite;
 }
 
-.scroll-top-btn {
-  animation: fadeIn 1s ease-out;
-  transition: all 0.3s ease;
-}
-
-.scroll-top-btn:hover {
-  animation: pulse 1.5s infinite;
-}
-
 
 
 @keyframes dotMovement {
@@ -358,12 +349,6 @@
 .animate-on-scroll.visible {
   opacity: 1;
   transform: translateY(0);
-}
-
-.btn-glass, 
-
-.btn-glass:hover {
-  animation: pulse 1.5s infinite, borderGlow 4s infinite;
 }
 
 .page-spin {

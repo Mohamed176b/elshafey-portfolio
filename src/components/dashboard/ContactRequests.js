@@ -142,6 +142,8 @@ const ContactRequests = () => {
 
         if (error) throw error;
 
+        // Clear cache to force a fresh fetch
+        setCache({ data: {}, timestamp: null });
         await fetchContactRequests();
 
         if (selectedRequest && selectedRequest.id === id) {

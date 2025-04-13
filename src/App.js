@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import SplashScreen from "./components/portfolio/SplashScreen";
 import ProtectedRoute from "./components/dashboard/ProtectedRoute";
-// Lazy loading components
 const Portfolio = React.lazy(() => import("./components/portfolio/Portfolio"));
 const ProjectPage = React.lazy(() => import("./components/portfolio/ProjectPage"));
 const Dashboard = React.lazy(() => import("./components/dashboard/Dashboard"));

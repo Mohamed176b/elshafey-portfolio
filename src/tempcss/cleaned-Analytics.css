@@ -1,0 +1,305 @@
+.analytics-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  direction: ltr;
+  background: rgba(27, 58, 75, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--forground-color);
+  border-radius: 15px;
+  scroll-behavior: smooth;
+}
+
+.analytics-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analytics-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--forground-color);
+  margin: 0;
+}
+
+.last-update {
+  font-size: 0.9rem;
+  color: rgba(251, 248, 239, 0.7);
+}
+
+/* Statistics Cards */
+.statistics-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(33, 47, 69, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top right, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 70%);
+  pointer-events: none;
+}
+
+.stat-card h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--forground-color);
+}
+
+.stat-card p {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--forground-color);
+}
+
+/* Charts */
+.analytics-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.chart-container {
+  background: rgba(33, 47, 69, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.chart-header h3 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--forground-color);
+}
+
+/* Chart Body */
+.chart-body {
+  width: 100%;
+  background: rgba(33, 47, 69, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.chart-body:hover {
+  background: rgba(33, 47, 69, 0.4);
+}
+
+/* Time Range Buttons */
+.time-range-buttons,
+.view-type-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.time-range-buttons button,
+.view-type-buttons button {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(49, 34, 68, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--forground-color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.time-range-buttons button.active,
+.view-type-buttons button.active {
+  background: rgba(77, 25, 77, 0.8);
+  color: var(--forground-color);
+  border-color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+.time-range-buttons button:hover:not(.active),
+.view-type-buttons button:hover:not(.active) {
+  background: rgba(62, 31, 71, 0.8);
+}
+
+.time-range-buttons button:active,
+.view-type-buttons button:active {
+  transform: translateY(1px);
+}
+
+/* Charts Layout */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Chart Loading State */
+.chart-loader {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(33, 47, 69, 0.3);
+  border-radius: 12px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--forground-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Recharts Customization */
+
+/* Specific Chart Styles */
+.daily-visits {
+  min-height: 400px;
+}
+
+.project-visits {
+  min-height: 450px;
+}
+
+.browser-stats,
+.device-stats {
+  min-height: 150px;
+}
+
+.traffic-sources {
+  min-height: 400px;
+}
+
+.location-stats {
+  min-height: 450px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-container {
+    padding: 1rem;
+  }
+
+  .chart-body {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-page {
+    padding: 1rem;
+  }
+
+  .statistics-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .time-range-buttons,
+  .view-type-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .time-range-buttons button,
+  .view-type-buttons button {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* Animation Effects */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card,
+.chart-container {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.daily-visits { animation-delay: 0.5s; }
+.project-visits { animation-delay: 0.6s; }
+.browser-stats { animation-delay: 0.7s; }
+.device-stats { animation-delay: 0.8s; }
+.traffic-sources { animation-delay: 0.9s; }
+.location-stats { animation-delay: 1s; }
