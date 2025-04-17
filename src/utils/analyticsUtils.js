@@ -307,9 +307,13 @@ export const fetchVisitStats = async () => {
     const monthAgo = new Date(today);
     monthAgo.setDate(today.getDate() - 30);
 
+    const quarterAgo = new Date(today);
+    quarterAgo.setDate(today.getDate() - 90);
+
     const todayStr = today.toISOString().split("T")[0];
     const weekAgoStr = weekAgo.toISOString();
     const monthAgoStr = monthAgo.toISOString();
+    const quarterAgoStr = quarterAgo.toISOString();
 
     // Fetch all visit data in parallel
     const [
@@ -319,6 +323,7 @@ export const fetchVisitStats = async () => {
       projectVisits,
       visitsData,
       locationData,
+      dailyVisits, // New query to get daily visits data
     ] = await Promise.all([
       // Today's visits
       supabase
@@ -352,7 +357,25 @@ export const fetchVisitStats = async () => {
 
       // Location data
       supabase.from("page_visits").select("country, city"),
+      
+      // Get all home page visits in the past 90 days for daily chart
+      supabase
+        .from("page_visits")
+        .select("visit_date")
+        .eq("page_type", "home")
+        .gte("visit_date", quarterAgoStr)
+        .order("visit_date", { ascending: true }),
     ]);
+
+    // Process daily visits data
+    const dailyVisitsMap = new Map();
+    if (dailyVisits.data && dailyVisits.data.length > 0) {
+      dailyVisits.data.forEach(visit => {
+        // Extract just the date part (YYYY-MM-DD)
+        const visitDate = visit.visit_date.split('T')[0];
+        dailyVisitsMap.set(visitDate, (dailyVisitsMap.get(visitDate) || 0) + 1);
+      });
+    }
 
     // Process project visits
     const projectStats = {};
@@ -434,8 +457,13 @@ export const fetchVisitStats = async () => {
           referrer === "Direct Link"
             ? "Direct Link"
             : new URL(referrer).hostname || "Unknown";
-        referrerStats[referrerDomain] =
-          (referrerStats[referrerDomain] || 0) + 1;
+        
+        // Check for Facebook domains and consolidate them
+        if (referrerDomain === "m.facebook.com" || referrerDomain === "www.facebook.com" || referrerDomain === "l.facebook.com" || referrerDomain === "lm.facebook.com") {
+          referrerStats["www.facebook.com"] = (referrerStats["www.facebook.com"] || 0) + 1;
+        } else {
+          referrerStats[referrerDomain] = (referrerStats[referrerDomain] || 0) + 1;
+        }
       });
     }
 
@@ -464,6 +492,7 @@ export const fetchVisitStats = async () => {
       todayHomeVisits: todayVisits.data?.length || 0,
       weekHomeVisits: weekVisits.data?.length || 0,
       monthHomeVisits: monthVisits.data?.length || 0,
+      dailyVisitsData: dailyVisitsMap, // Add daily visits data to the returned object
       projectVisits: Object.values(projectStats),
       userAgentData: formatStats(userAgentStats),
       browserData: formatStats(browserStats),

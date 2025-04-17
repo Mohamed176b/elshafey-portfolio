@@ -1,4 +1,4 @@
-# ElShafey Portfolio
+# Elshafey Portfolio
 
 ## Overview
 

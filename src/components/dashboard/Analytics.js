@@ -109,12 +109,24 @@ const Analytics = () => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Aggregate visits from page_visits data
-    analyticsData.todayHomeVisits &&
-      visitMap.set(
-        today.toISOString().split("T")[0],
-        analyticsData.todayHomeVisits
-      );
+    // If we have daily visits data from the API, use it
+    if (analyticsData.dailyVisitsData) {
+      // Fill in the actual visit counts from our data
+      for (const [dateStr, count] of analyticsData.dailyVisitsData.entries()) {
+        // Only include dates within our selected time range
+        const visitDate = new Date(dateStr);
+        if (visitDate >= startDate && visitDate <= today) {
+          visitMap.set(dateStr, count);
+        }
+      }
+    } else {
+      // Fallback to just using today's data if dailyVisitsData isn't available
+      analyticsData.todayHomeVisits &&
+        visitMap.set(
+          today.toISOString().split("T")[0],
+          analyticsData.todayHomeVisits
+        );
+    }
 
     // Return formatted data for chart
     return Array.from(visitMap).map(([date, count]) => ({
