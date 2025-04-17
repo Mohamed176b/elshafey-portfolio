@@ -314,7 +314,7 @@ const Portfolio = ({ initialData }) => {
             </div>
           )}
           <div className="profile-info">
-            <h1>{profile?.name || "Developer"}</h1>
+            <h1>{profile?.name || "Mohamed Elshafey"}</h1>
             <p className="profile-bio">
               {profile?.about ||
                 "Frontend Developer specializing in creating modern web applications"}
