@@ -193,7 +193,7 @@ const Portfolio = ({ initialData }) => {
   }, []);
 
   useEffect(() => {
-    document.title = "Elshafey Portfolio";
+    document.title = "Mohamed Elshafey | Elshafey Portfolio";
 
     const fetchData = async () => {
       // Only fetch data if no initialData was provided from SplashScreen
