@@ -93,7 +93,7 @@ const ProjectPage = () => {
         visitTrackedRef.current = true;
       }
 
-      document.title = `${projectData.name} | Portfolio`;
+      document.title = `${projectData.name} | Elshafey Portfolio`;
 
       // Fetch technologies
       const { data: techData, error: techError } = await supabase
