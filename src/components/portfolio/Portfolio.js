@@ -366,7 +366,7 @@ const Portfolio = ({ initialData }) => {
             <h2 className="section-title">Projects</h2>
 
             {projects.length === 0 ? (
-              <p className="no-projects">No projects available yet.</p>
+              <p className="no-projects">See All Projects.</p>
             ) : (
               <div className="projects-grid">
                 {projects.map((project) => (
