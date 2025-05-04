@@ -310,7 +310,7 @@ const Portfolio = ({ initialData }) => {
         <div className="profile-container">
           {profile?.user_img && (
             <div className="profile-image">
-              <img src={profile.user_img} alt={profile.name} loading="lazy" />
+              <img src={profile.user_img} alt={profile.name}/>
             </div>
           )}
           <div className="profile-info">
